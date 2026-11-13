@@ -1,0 +1,330 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>PulseRoute | AI-Powered Emergency Response Corridor — GNDEC Hacknauts 2.0</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        ops: {
+                            bg: '#080a0f',
+                            panel: '#0e1219',
+                            surface: '#151b26',
+                            elevated: '#1c2433',
+                            border: '#252f40',
+                            muted: '#64748b',
+                            text: '#e2e8f0'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Leaflet.js GIS Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        html, body {
+            background-color: #080a0f;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Leaflet Dark Municipal Theme */
+        .leaflet-container {
+            background-color: #0b0e14 !important;
+            font-family: 'Inter', sans-serif !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .leaflet-control-attribution {
+            background: rgba(14, 18, 25, 0.88) !important;
+            color: #64748b !important;
+            font-size: 9px !important;
+            padding: 1px 5px !important;
+        }
+        .leaflet-control-attribution a {
+            color: #94a3b8 !important;
+        }
+        .leaflet-control-zoom {
+            border: 1px solid #252f40 !important;
+            border-radius: 6px !important;
+            overflow: hidden;
+        }
+        .leaflet-control-zoom a {
+            background-color: #0e1219 !important;
+            color: #e2e8f0 !important;
+            border-bottom: 1px solid #252f40 !important;
+            width: 32px !important;
+            height: 32px !important;
+            line-height: 30px !important;
+        }
+
+        /* Ambulance Radar Pulse */
+        @keyframes gps-radar {
+            0% { transform: scale(0.75); opacity: 0.95; }
+            100% { transform: scale(2.7); opacity: 0; }
+        }
+        .ambulance-radar {
+            animation: gps-radar 1.7s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        /* CPR 110 BPM Metronome Pulse */
+        @keyframes cpr-beat {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.22); opacity: 1; }
+        }
+        .cpr-active-pulse {
+            animation: cpr-beat 0.545s infinite;
+        }
+
+        /* Custom Thin Scrollbars */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #252f40; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
+</head>
+<body class="min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col antialiased selection:bg-blue-600 selection:text-white max-w-[100vw] overflow-x-hidden">
+
+    <!-- ========================================================================= -->
+    <!-- 1. TOP COMMAND BAR: BRANDING, RBAC SELECTOR & SAFETY CONTROLS             -->
+    <!-- ========================================================================= -->
+    <header class="bg-ops-panel border-b border-ops-border px-3 py-2.5 shrink-0 z-[1000] space-y-2">
+        <!-- Row 1: Identity, RBAC Role Switcher & Primary Dispatch Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-2 min-w-0">
+            
+            <!-- Brand & GNDEC Coordinates -->
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-400/30 flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <i class="fa-solid fa-truck-medical text-xs sm:text-sm"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white truncate">PulseRoute</h1>
+                        <span class="px-1.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-[9px] font-semibold uppercase shrink-0">
+                            HACKNAUTS 2.0
+                        </span>
+                        <span class="hidden md:inline-block text-[10px] text-slate-400 font-mono truncate">
+                            • Team Brain Bytes (GNDEC)
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono truncate">
+                        <span class="text-slate-300">INC-LDH-084</span>
+                        <span>•</span>
+                        <span class="truncate">30.86° N, 75.86° E</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Controls: RBAC Selector, Global Human Override & Dispatch Run -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <!-- RBAC Role-Based Access Control Selector (Slide 5) -->
+                <div class="relative">
+                    <select id="rbac-role-select" onchange="switchRbacRole(this.value)" aria-label="Role-Based Access Control Selector" class="min-h-[38px] bg-ops-surface hover:bg-ops-elevated border border-ops-border rounded-md pl-2 pr-6 py-1 text-[10px] sm:text-xs font-mono text-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="ADMIN">RBAC: Traffic Admin</option>
+                        <option value="EMT">RBAC: Ambulance EMT</option>
+                        <option value="HOSPITAL">RBAC: Hospital Trauma</option>
+                        <option value="CITIZEN">RBAC: Citizen / Driver</option>
+                    </select>
+                </div>
+
+                <!-- Global Human Override Emergency Switch (Slide 4 & 5 Safety Condition) -->
+                <button id="btn-global-override" onclick="toggleGlobalHumanOverride()" class="min-h-[38px] px-2.5 py-1 rounded-md bg-ops-surface hover:bg-ops-elevated border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-mono font-semibold transition-colors flex items-center gap-1.5" title="Slide 4 & 5: Manual Human Override">
+                    <i class="fa-solid fa-hand text-[10px]"></i>
+                    <span class="hidden md:inline">OVERRIDE</span>
+                    <span class="md:hidden">OVR</span>
+                </button>
+
+                <!-- Start / Pause Incident Simulation -->
+                <button id="btn-dispatch-toggle" onclick="toggleDispatch()" class="min-h-[38px] px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm">
+                    <i id="dispatch-icon" class="fa-solid fa-play text-[10px]"></i>
+                    <span id="dispatch-label">Dispatch</span>
+                </button>
+
+                <!-- Reset -->
+                <button onclick="resetSystem()" class="min-h-[38px] min-w-[38px] rounded-md bg-ops-surface hover:bg-ops-elevated border border-ops-border text-slate-400 hover:text-white text-xs flex items-center justify-center transition-colors" title="Reset Incident">
+                    <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Row 2: Safety-by-Design Badges & 5-Step Technical Implementation Pipeline -->
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-2 pt-1.5 border-t border-ops-border/80 min-w-0">
+            
+            <!-- Safety-by-Design Badges (Slide 5) -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 shrink-0 no-scrollbar">
+                <span class="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-300 font-mono text-[9px] whitespace-nowrap shrink-0">
+                    <i class="fa-solid fa-grid mr-1"></i>SUMO SIMULATED GRID
+                </span>
+                <span id="badge-consent-top" class="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[9px] whitespace-nowrap shrink-0">
+                    <i class="fa-solid fa-user-shield mr-1"></i>CONSENT: GRANTED
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-300 font-mono text-[9px] whitespace-nowrap shrink-0">
+                    <i class="fa-solid fa-lock mr-1"></i>AES-256 + POSTGIS
+                </span>
+                <span id="badge-network-top" class="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[9px] whitespace-nowrap shrink-0">
+                    <i class="fa-solid fa-wifi mr-1"></i>KAFKA/WS: ONLINE
+                </span>
+            </div>
+
+            <!-- 5-Step Technical Implementation Pipeline Tracker (Slide 5 Exact Sequence) -->
+            <div class="flex items-center gap-1 overflow-x-auto pb-0.5 min-w-0 font-mono text-[9px] tabular-nums">
+                <div id="pipe-step-1" class="pipe-step px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 whitespace-nowrap shrink-0">
+                    1. Dispatch
+                </div>
+                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
+                <div id="pipe-step-2" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
+                    2. GNN Route
+                </div>
+                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
+                <div id="pipe-step-3" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
+                    3. Signals &amp; Alerts
+                </div>
+                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
+                <div id="pipe-step-4" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
+                    4. Telemetry
+                </div>
+                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
+                <div id="pipe-step-5" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
+                    5. Audit Log
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MOBILE COMPACT TELEMETRY STRIP (< lg screens) -->
+    <div class="lg:hidden bg-ops-surface border-b border-ops-border px-3 py-2 flex items-center justify-between text-[11px] font-mono tabular-nums shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
+            <span id="mobile-road-label" class="text-slate-200 font-sans font-medium truncate">Gill Rd (GNDEC Gate)</span>
+        </div>
+        <div class="flex items-center gap-3 shrink-0 ml-2">
+            <span class="text-slate-400"><strong id="mobile-dist" class="text-white">6.8</strong>km</span>
+            <span class="text-emerald-400 font-bold">ETA <span id="mobile-eta">10:45</span></span>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MAIN RESPONSIVE COMMAND WORKSPACE                                         -->
+    <!-- ========================================================================= -->
+    <main class="flex-1 flex flex-col lg:grid lg:grid-cols-12 min-h-0 overflow-x-hidden max-w-[100vw]">
+
+        <!-- ===================================================================== -->
+        <!-- TAB 1 / COLUMN 1: ATCS SIGNALS, CV COMPLIANCE & RISK FALLBACKS        -->
+        <!-- ===================================================================== -->
+        <section id="panel-corridor" class="mobile-tab-panel lg:col-span-3 flex flex-col bg-ops-panel lg:border-r border-ops-border min-h-0 lg:overflow-y-auto order-2 lg:order-1 divide-y divide-ops-border">
+            
+            <!-- Module 1A: 5 ATCS Signals + Computer Vision Lane Compliance -->
+            <div class="p-3.5 space-y-3 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <i class="fa-solid fa-traffic-light text-emerald-400 text-xs shrink-0"></i>
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200 truncate">ATCS &amp; CV Lane Sync</h2>
+                    </div>
+                    <span id="green-count-badge" class="px-2 py-0.5 rounded bg-ops-bg border border-ops-border font-mono text-[10px] text-slate-400 shrink-0 tabular-nums">
+                        0/5 GREEN
+                    </span>
+                </div>
+
+                <div id="signal-cards-list" class="space-y-2 min-w-0">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Module 1B: Key Risk & Fallback Simulator (Slide 4) -->
+            <div class="p-3.5 space-y-3 bg-ops-surface/30 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <i class="fa-solid fa-shield-halved text-amber-400 text-xs shrink-0"></i>
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200 truncate">Slide 4: Risk Fallbacks</h2>
+                    </div>
+                    <span class="text-[9px] font-mono text-slate-400 shrink-0">FAIL-SAFE</span>
+                </div>
+
+                <!-- Risk 1: Network Outage Fallback -->
+                <div class="bg-ops-bg border border-ops-border rounded-lg p-3 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-medium text-slate-200 truncate">1. Network Outage Fallback</span>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0 min-h-[32px] min-w-[32px]">
+                            <input type="checkbox" id="risk-network-toggle" onchange="toggleNetworkOutage(this.checked)" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+                    <p id="risk-network-desc" class="text-[10px] text-slate-400 leading-snug break-words">
+                        Normal: Real-time FastAPI WebSocket + Kafka telemetry active.
+                    </p>
+                </div>
+
+                <!-- Risk 2: Inaccurate Data Filter -->
+                <div class="bg-ops-bg border border-ops-border rounded-lg p-3 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-medium text-slate-200 truncate">2. Inaccurate Data Filter</span>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0 min-h-[32px] min-w-[32px]">
+                            <input type="checkbox" id="risk-anomaly-toggle" onchange="toggleDataAnomaly(this.checked)" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+                    <p id="risk-anomaly-desc" class="text-[10px] text-slate-400 leading-snug break-words">
+                        Kalman GPS &amp; vital threshold guard active (0 false alerts).
+                    </p>
+                </div>
+
+                <!-- Risk 3: Unsafe Driver Distraction Guard -->
+                <div class="bg-ops-bg border border-ops-border rounded-lg p-3 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-medium text-slate-200 truncate">3. Driver Distraction Guard</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-mono text-[9px] shrink-0">ENFORCED</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-snug break-words">
+                        Locks commuter UI to 3-word audio prompts above 20 km/h.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAB 2 / COLUMN 2: LUDHIANA SUMO/GIS MAP + PILOT MEASUREMENT MATRIX    -->
+        <!-- ===================================================================== -->
+        <section id="panel-map-pilot" class="mobile-tab-panel hidden lg:flex lg:col-span-6 flex-col bg-ops-bg lg:border-r border-ops-border min-h-0 order-1 lg:order-2 lg:overflow-y-auto">
+            
+            <!-- Desktop Corridor Header -->
+            <div class="hidden lg:flex bg-ops-panel/90 border-b border-ops-border px-4 py-2.5 items-center justify-between gap-3 text-xs shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="min-w-0">
+                        <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Ambulance Unit</span>
+                        <span class="font-mono font-semibold text-white">PB-10-EM-4092</span>
+                    </div>
+                    <span class="h-6 w-px bg-ops-border shrink-0"></span>
+                    <div class="min-w-0">
+                        <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Active
