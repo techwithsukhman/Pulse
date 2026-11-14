@@ -1,330 +1,1422 @@
-```html
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>PulseRoute | AI-Powered Emergency Response Corridor — GNDEC Hacknauts 2.0</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        ops: {
-                            bg: '#080a0f',
-                            panel: '#0e1219',
-                            surface: '#151b26',
-                            elevated: '#1c2433',
-                            border: '#252f40',
-                            muted: '#64748b',
-                            text: '#e2e8f0'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050a12" />
+  <title>PulseRoute — AI Emergency Response Corridor</title>
+  <meta name="description" content="PulseRoute connects traffic signals, ambulances, hospitals and citizens into one live emergency corridor. Hacknauts 2.0 · Team Brain Bytes · GNDEC Ludhiana." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%230f172a%22/><path d=%22M5 18h6l2.2-7 4 13 3-8h6.8%22 fill=%22none%22 stroke=%22%232dd4bf%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>" />
 
-    <!-- Leaflet.js GIS Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Standard web stack only: Tailwind CDN, Leaflet CDN, vanilla JS. No build step. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ink: '#050a12',
+            panel: '#0a1423',
+            brand: '#2dd4bf',
+            accent: '#38bdf8'
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://server.arcgisonline.com" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <!-- Google Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050a12;
+      --bg-soft: #07101d;
+      --panel: #0a1423;
+      --panel-2: #0d192a;
+      --panel-3: #122136;
+      --line: rgba(148, 163, 184, 0.14);
+      --line-strong: rgba(148, 163, 184, 0.26);
+      --text: #e8eefb;
+      --muted: #8ba0bd;
+      --muted-2: #64748b;
+      --brand: #2dd4bf;
+      --brand-2: #38bdf8;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --violet: #a78bfa;
+      --shadow: 0 24px 70px -38px rgba(0, 0, 0, 0.95);
+      --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
 
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 620px at 78% -12%, rgba(45, 212, 191, 0.09), transparent 62%),
+        radial-gradient(900px 560px at 4% 8%, rgba(56, 189, 248, 0.07), transparent 58%),
+        var(--bg);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body.modal-open { overflow: hidden; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; }
+    a { color: inherit; }
+    ::selection { background: rgba(45, 212, 191, 0.28); color: #fff; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .hidden { display: none !important; }
+    .icon { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .icon-sm { width: 0.95rem; height: 0.95rem; }
+    .icon-lg { width: 1.5rem; height: 1.5rem; }
+    .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
-    <style>
-        html, body {
-            background-color: #080a0f;
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: #07101d; }
+    ::-webkit-scrollbar-thumb { background: #1d3049; border-radius: 99px; border: 2px solid #07101d; }
+    ::-webkit-scrollbar-thumb:hover { background: #2a425f; }
 
-        .tabular-nums {
-            font-variant-numeric: tabular-nums;
-        }
+    /* ——— Layout shell ——— */
+    .app-shell { min-height: 100vh; }
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 600;
+      display: flex;
+      width: 260px;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(8, 17, 30, 0.98), rgba(5, 10, 18, 0.99));
+      box-shadow: 18px 0 60px -40px #000;
+    }
+    .main-wrap { min-width: 0; margin-left: 260px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 500;
+      display: flex;
+      min-height: 70px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem clamp(1rem, 2.8vw, 2rem);
+      border-bottom: 1px solid var(--line);
+      background: rgba(5, 10, 18, 0.78);
+      backdrop-filter: blur(18px);
+    }
+    .main-content { width: 100%; max-width: 1560px; margin: 0 auto; padding: clamp(1rem, 2.5vw, 2rem); }
+    .page { animation: page-in 0.28s ease both; }
+    @keyframes page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .page-title { margin: 0.25rem 0 0; font-size: clamp(1.55rem, 3.2vw, 2.2rem); line-height: 1.06; letter-spacing: -0.035em; font-weight: 700; }
+    .page-sub { margin: 0.45rem 0 0; max-width: 42rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .page-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 
-        /* Leaflet Dark Municipal Theme */
-        .leaflet-container {
-            background-color: #0b0e14 !important;
-            font-family: 'Inter', sans-serif !important;
-            width: 100% !important;
-            height: 100% !important;
-        }
-        .leaflet-control-attribution {
-            background: rgba(14, 18, 25, 0.88) !important;
-            color: #64748b !important;
-            font-size: 9px !important;
-            padding: 1px 5px !important;
-        }
-        .leaflet-control-attribution a {
-            color: #94a3b8 !important;
-        }
-        .leaflet-control-zoom {
-            border: 1px solid #252f40 !important;
-            border-radius: 6px !important;
-            overflow: hidden;
-        }
-        .leaflet-control-zoom a {
-            background-color: #0e1219 !important;
-            color: #e2e8f0 !important;
-            border-bottom: 1px solid #252f40 !important;
-            width: 32px !important;
-            height: 32px !important;
-            line-height: 30px !important;
-        }
+    /* ——— Brand ——— */
+    .brand { display: inline-flex; align-items: center; gap: 0.7rem; text-decoration: none; }
+    .brand-mark {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 2.35rem;
+      height: 2.35rem;
+      border-radius: 0.8rem;
+      color: #04110f;
+      background: linear-gradient(135deg, #5eead4, #2dd4bf 45%, #0ea5e9);
+      box-shadow: 0 8px 24px -8px rgba(45, 212, 191, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+    .brand-mark .icon { width: 1.45rem; height: 1.45rem; stroke-width: 2.2; }
+    .brand-name { display: block; font-size: 1.02rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1; }
+    .brand-sub { display: block; margin-top: 0.28rem; color: var(--muted-2); font-size: 0.56rem; font-weight: 700; letter-spacing: 0.17em; text-transform: uppercase; }
 
-        /* Ambulance Radar Pulse */
-        @keyframes gps-radar {
-            0% { transform: scale(0.75); opacity: 0.95; }
-            100% { transform: scale(2.7); opacity: 0; }
-        }
-        .ambulance-radar {
-            animation: gps-radar 1.7s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
+    /* ——— Login role cards ——— */
+    .role-card {
+      position: relative;
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.72rem;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 0.85rem;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+      color: var(--text);
+      text-align: left;
+      transition: transform 0.16s, border-color 0.16s, background 0.16s, box-shadow 0.16s;
+    }
+    .role-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(45, 212, 191, 0.4);
+      background: linear-gradient(135deg, rgba(45, 212, 191, 0.09), rgba(255, 255, 255, 0.02));
+      box-shadow: 0 14px 34px -22px rgba(45, 212, 191, 0.6);
+    }
+    .role-icon { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; flex: none; border: 1px solid var(--line); border-radius: 0.72rem; }
+    .role-icon .icon { width: 1.15rem; height: 1.15rem; }
+    .role-name { display: block; font-size: 0.73rem; font-weight: 700; letter-spacing: -0.005em; }
+    .role-desc { display: block; margin-top: 0.14rem; color: #6f849e; font-size: 0.57rem; line-height: 1.4; }
+    .role-arrow { width: 0.9rem; height: 0.9rem; color: #52677f; transition: transform 0.16s, color 0.16s; }
+    .role-card:hover .role-arrow { transform: translateX(2px); color: var(--brand); }
 
-        /* CPR 110 BPM Metronome Pulse */
-        @keyframes cpr-beat {
-            0%, 100% { transform: scale(1); opacity: 0.85; }
-            50% { transform: scale(1.22); opacity: 1; }
-        }
-        .cpr-active-pulse {
-            animation: cpr-beat 0.545s infinite;
-        }
+    /* ——— Sidebar ——— */
+    .sidebar-inner { display: flex; min-height: 100%; flex-direction: column; padding: 1rem 0.85rem; }
+    .sidebar-brand-row { display: flex; align-items: center; justify-content: space-between; padding: 0.2rem 0.35rem 0.9rem; }
+    .nav-group-label { margin: 1rem 0.55rem 0.4rem; color: #52677f; font-size: 0.56rem; font-weight: 800; letter-spacing: 0.17em; text-transform: uppercase; }
+    .nav-item {
+      position: relative;
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.62rem 0.7rem;
+      margin-bottom: 0.18rem;
+      border: 1px solid transparent;
+      border-radius: 0.7rem;
+      background: transparent;
+      color: #9db0c9;
+      font-size: 0.79rem;
+      font-weight: 600;
+      text-align: left;
+      transition: background 0.16s, color 0.16s, border-color 0.16s;
+    }
+    .nav-item:hover { background: rgba(148, 163, 184, 0.07); color: var(--text); }
+    .nav-item .icon { width: 1rem; height: 1rem; color: #7088a4; }
+    .nav-item.active { border-color: rgba(45, 212, 191, 0.2); background: linear-gradient(90deg, rgba(45, 212, 191, 0.14), rgba(45, 212, 191, 0.03)); color: #d7fff9; }
+    .nav-item.active .icon { color: var(--brand); }
+    .nav-item.active::before { content: ""; position: absolute; left: -0.86rem; top: 25%; bottom: 25%; width: 3px; border-radius: 0 4px 4px 0; background: var(--brand); box-shadow: 0 0 12px rgba(45, 212, 191, 0.8); }
+    .nav-badge { margin-left: auto; display: inline-grid; place-items: center; min-width: 1.2rem; height: 1.2rem; padding: 0 0.28rem; border-radius: 99px; background: rgba(52, 211, 153, 0.15); color: #6ee7b7; font-family: var(--mono); font-size: 0.6rem; font-weight: 700; }
+    .sidebar-incident { margin: 0.9rem 0.25rem 0; padding: 0.8rem; border: 1px solid rgba(251, 113, 133, 0.18); border-radius: 0.85rem; background: linear-gradient(145deg, rgba(251, 113, 133, 0.08), rgba(251, 113, 133, 0.015)); }
+    .sidebar-incident .mini-label { color: #fda4af; }
+    .sidebar-footer { margin-top: auto; padding-top: 1rem; }
+    .sidebar-foot-btn { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.55rem 0.6rem; border: 0; border-radius: 0.6rem; background: transparent; color: #7f94ad; font-size: 0.72rem; font-weight: 600; text-align: left; }
+    .sidebar-foot-btn:hover { background: rgba(148, 163, 184, 0.07); color: var(--text); }
+    .sidebar-foot-btn .icon { width: 0.95rem; height: 0.95rem; }
+    .team-stamp { margin: 0.9rem 0.35rem 0; padding-top: 0.85rem; border-top: 1px solid var(--line); color: #4f6580; font-size: 0.58rem; line-height: 1.7; letter-spacing: 0.02em; }
 
-        /* Custom Thin Scrollbars */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #252f40; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #334155; }
-    </style>
+    /* ——— Topbar ——— */
+    .topbar-title { margin: 0; font-size: 0.98rem; font-weight: 700; letter-spacing: -0.015em; }
+    .topbar-kicker { margin: 0 0 0.1rem; color: var(--muted-2); font-size: 0.56rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+    .topbar-actions { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+    .clock-pill { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 0.55rem; background: rgba(255, 255, 255, 0.025); color: #a8bad0; font-family: var(--mono); font-size: 0.64rem; white-space: nowrap; }
+    .status-pill { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.38rem 0.55rem; border: 1px solid var(--line); border-radius: 99px; background: rgba(255, 255, 255, 0.025); color: #9db0c9; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; }
+    .status-pill.is-live { border-color: rgba(52, 211, 153, 0.25); background: rgba(52, 211, 153, 0.08); color: #6ee7b7; }
+    .status-pill.is-warn { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.08); color: #fcd34d; }
+    .status-pill.is-danger { border-color: rgba(251, 113, 133, 0.3); background: rgba(251, 113, 133, 0.08); color: #fda4af; }
+    .live-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12); animation: blink 1.7s ease-in-out infinite; }
+    .live-dot.amber { background: var(--amber); box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.12); }
+    .live-dot.rose { background: var(--rose); box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.12); }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .icon-btn { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border: 1px solid var(--line); border-radius: 0.62rem; background: rgba(255, 255, 255, 0.025); color: #9db0c9; transition: 0.16s; }
+    .icon-btn:hover { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.055); color: #fff; }
+    .icon-btn .icon { width: 1rem; height: 1rem; }
+    .user-chip { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.5rem 0.3rem 0.32rem; border: 1px solid var(--line); border-radius: 99px; background: rgba(255, 255, 255, 0.025); min-width: 0; }
+    .user-avatar { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; flex: none; border-radius: 50%; background: rgba(45, 212, 191, 0.14); color: var(--brand); }
+    .user-avatar .icon { width: 0.85rem; height: 0.85rem; }
+    .user-meta { min-width: 0; }
+    .user-name { display: block; max-width: 9.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.66rem; font-weight: 700; }
+    .user-role { display: block; font-size: 0.55rem; color: var(--muted-2); white-space: nowrap; }
+
+    /* ——— Panels, buttons, typography ——— */
+    .panel { position: relative; border: 1px solid var(--line); border-radius: 1.1rem; background: linear-gradient(180deg, rgba(13, 25, 42, 0.92), rgba(8, 17, 30, 0.96)); box-shadow: var(--shadow); }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; padding: 1rem 1.15rem; border-bottom: 1px solid var(--line); }
+    .panel-title { margin: 0; font-size: 0.86rem; font-weight: 700; letter-spacing: -0.01em; }
+    .panel-sub { margin: 0.18rem 0 0; color: var(--muted-2); font-size: 0.67rem; line-height: 1.45; }
+    .panel-body { padding: 1.15rem; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 0.4rem; color: #6e849f; font-size: 0.57rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+    .mini-label { display: block; margin-bottom: 0.28rem; color: #6d829c; font-size: 0.54rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
+    .chip { display: inline-flex; align-items: center; gap: 0.32rem; max-width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--line); border-radius: 99px; background: rgba(255, 255, 255, 0.03); color: #9db0c9; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+    .chip-green { border-color: rgba(52, 211, 153, 0.25); background: rgba(52, 211, 153, 0.09); color: #6ee7b7; }
+    .chip-amber { border-color: rgba(251, 191, 36, 0.25); background: rgba(251, 191, 36, 0.08); color: #fcd34d; }
+    .chip-rose { border-color: rgba(251, 113, 133, 0.25); background: rgba(251, 113, 133, 0.08); color: #fda4af; }
+    .chip-teal { border-color: rgba(45, 212, 191, 0.25); background: rgba(45, 212, 191, 0.09); color: #5eead4; }
+    .chip-sky { border-color: rgba(56, 189, 248, 0.25); background: rgba(56, 189, 248, 0.08); color: #7dd3fc; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      min-height: 2.35rem;
+      padding: 0.5rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 0.62rem;
+      background: rgba(255, 255, 255, 0.035);
+      color: #cfdaea;
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      transition: transform 0.16s, border-color 0.16s, background 0.16s, color 0.16s;
+    }
+    .btn:hover { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.065); color: #fff; }
+    .btn:active { transform: translateY(1px); }
+    .btn .icon { width: 0.95rem; height: 0.95rem; }
+    .btn-primary { border-color: rgba(45, 212, 191, 0.4); background: linear-gradient(135deg, #2dd4bf, #14b8a6); color: #03201c; box-shadow: 0 9px 26px -13px rgba(45, 212, 191, 0.9); }
+    .btn-primary:hover { border-color: #5eead4; background: linear-gradient(135deg, #5eead4, #2dd4bf); color: #021512; }
+    .btn-danger { border-color: rgba(251, 113, 133, 0.3); background: rgba(251, 113, 133, 0.09); color: #fda4af; }
+    .btn-danger:hover { border-color: rgba(251, 113, 133, 0.5); background: rgba(251, 113, 133, 0.16); color: #fecdd3; }
+    .btn-ghost { border-color: transparent; background: transparent; color: #8ba0bd; }
+    .btn-ghost:hover { border-color: var(--line); background: rgba(255, 255, 255, 0.04); color: #fff; }
+    .btn-sm { min-height: 1.9rem; padding: 0.38rem 0.58rem; font-size: 0.64rem; border-radius: 0.5rem; }
+    .btn-sm .icon { width: 0.85rem; height: 0.85rem; }
+    .btn:disabled { opacity: 0.42; }
+    .mini-btn { display: inline-grid; place-items: center; width: 1.55rem; height: 1.55rem; border: 1px solid var(--line); border-radius: 0.42rem; background: transparent; color: #7088a4; }
+    .mini-btn:hover { color: var(--text); border-color: var(--line-strong); }
+    .mini-btn .icon { width: 0.72rem; height: 0.72rem; }
+
+    /* ——— Incident hero ——— */
+    .incident-hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      gap: 1.2rem;
+      padding: clamp(1rem, 2.5vw, 1.5rem);
+      border: 1px solid rgba(251, 113, 133, 0.2);
+      border-radius: 1.15rem;
+      background:
+        radial-gradient(560px 280px at 100% 0%, rgba(251, 113, 133, 0.13), transparent 65%),
+        linear-gradient(115deg, rgba(15, 30, 49, 0.96), rgba(8, 17, 30, 0.98));
+      box-shadow: var(--shadow);
+    }
+    .incident-hero::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(180deg, #fb7185, #f59e0b); }
+    .incident-hero-main { min-width: 0; }
+    .incident-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-bottom: 0.7rem; }
+    .incident-type { margin: 0; font-size: clamp(1.25rem, 2.5vw, 1.65rem); line-height: 1.1; letter-spacing: -0.025em; font-weight: 750; }
+    .incident-route { display: flex; align-items: center; gap: 0.4rem; margin: 0.5rem 0 0; color: #a9bbcf; font-size: 0.79rem; line-height: 1.45; }
+    .incident-route .icon { color: #5eead4; width: 0.9rem; height: 0.9rem; }
+    .incident-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem 1.2rem; margin-top: 1rem; max-width: 36rem; }
+    .incident-meta { min-width: 0; }
+    .incident-meta-value { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dce7f5; font-size: 0.76rem; font-weight: 650; }
+    .incident-side { display: flex; flex-direction: column; justify-content: center; min-width: 0; border-top: 1px solid var(--line); padding-top: 1rem; }
+    .hero-eta { font-family: var(--mono); font-size: clamp(2.25rem, 6vw, 3.35rem); font-weight: 750; letter-spacing: -0.06em; line-height: 0.95; color: #f8fafc; }
+    .hero-eta small { font-size: 0.55em; color: #6d829c; letter-spacing: 0; }
+    .progress-track { position: relative; height: 7px; overflow: hidden; border-radius: 99px; background: #16263b; }
+    .progress-track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2dd4bf, #38bdf8); transition: width 0.7s linear; box-shadow: 0 0 18px rgba(45, 212, 191, 0.55); }
+    .progress-track.is-rose > span { background: linear-gradient(90deg, #fb7185, #f59e0b); box-shadow: 0 0 18px rgba(251, 113, 133, 0.4); }
+    .hero-progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.45rem; color: #7088a4; font-size: 0.61rem; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1rem; }
+    .standby-mark { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 0.9rem; background: rgba(45, 212, 191, 0.08); color: var(--brand); }
+    .standby-mark .icon { width: 1.45rem; height: 1.45rem; }
+
+    /* ——— Signals ——— */
+    .signal-list { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.55rem; }
+    .signal-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.55rem; border: 1px solid transparent; border-radius: 0.68rem; transition: background 0.18s, border-color 0.18s; }
+    .signal-row:hover { background: rgba(148, 163, 184, 0.045); border-color: var(--line); }
+    .signal-index { display: grid; place-items: center; width: 2rem; height: 2rem; flex: none; border: 1px solid var(--line); border-radius: 0.58rem; background: #0a1626; color: #7c91ab; font-family: var(--mono); font-size: 0.59rem; font-weight: 700; transition: 0.2s; }
+    .signal-row.is-green .signal-index { border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.12); color: #6ee7b7; box-shadow: 0 0 16px -2px rgba(52, 211, 153, 0.35); }
+    .signal-row.is-manual .signal-index { border-color: rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.1); color: #fcd34d; }
+    .signal-copy { min-width: 0; flex: 1; }
+    .signal-id { display: block; color: #c1d0e2; font-family: var(--mono); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em; }
+    .signal-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6f849e; font-size: 0.61rem; margin-top: 0.1rem; }
+    .signal-state { flex: none; width: 4.8rem; text-align: right; }
+    .signal-state .chip { font-size: 0.5rem; padding: 0.2rem 0.38rem; }
+    .sig-switch { position: relative; display: inline-flex; align-items: center; width: 2.45rem; height: 1.4rem; flex: none; padding: 2px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 99px; background: #1a2a40; transition: background 0.2s, border-color 0.2s; }
+    .sig-switch > span { display: block; width: 1rem; height: 1rem; border-radius: 50%; background: #64748b; transition: transform 0.2s, background 0.2s, box-shadow 0.2s; }
+    .sig-switch.is-on { border-color: rgba(52, 211, 153, 0.5); background: rgba(52, 211, 153, 0.2); }
+    .sig-switch.is-on > span { transform: translateX(1.02rem); background: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.8); }
+    .sig-switch:disabled { opacity: 0.5; }
+    .signal-footer { padding: 0.7rem 1rem; border-top: 1px solid var(--line); color: #6f849e; font-size: 0.61rem; line-height: 1.5; }
+
+    /* ——— Map ——— */
+    .map-shell { position: relative; height: clamp(370px, 52vh, 550px); background: #07101d; }
+    #corridorMap { position: absolute; inset: 0; z-index: 1; background: #07101d; }
+    .leaflet-container { background: #07101d !important; font-family: var(--font) !important; }
+    .leaflet-control-attribution { background: rgba(5, 10, 18, 0.78) !important; color: #7b90aa !important; font-size: 8px !important; backdrop-filter: blur(7px); }
+    .leaflet-control-attribution a { color: #5eead4 !important; }
+    .leaflet-bar { border: 1px solid var(--line) !important; box-shadow: none !important; }
+    .leaflet-bar a { background: #0d192a !important; color: #cbd5e1 !important; border-color: var(--line) !important; }
+    .leaflet-bar a:hover { background: #16263b !important; color: #fff !important; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #0d192a !important; color: var(--text) !important; border: 1px solid var(--line); box-shadow: 0 18px 50px -20px #000 !important; }
+    .leaflet-popup-content { margin: 0.7rem 0.8rem !important; font-size: 0.72rem; line-height: 1.5; }
+    .leaflet-popup-close-button { color: #8ba0bd !important; }
+    .leaflet-div-icon { background: transparent !important; border: 0 !important; }
+    .map-overlay-top { position: absolute; left: 0.7rem; top: 0.7rem; z-index: 450; display: flex; flex-wrap: wrap; gap: 0.35rem; max-width: calc(100% - 4.5rem); pointer-events: none; }
+    .map-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.55rem; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 0.45rem; background: rgba(5, 10, 18, 0.78); color: #a8bad0; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; backdrop-filter: blur(8px); box-shadow: 0 6px 18px -10px #000; }
+    .map-legend { position: absolute; left: 0.7rem; bottom: 0.7rem; z-index: 450; display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; padding: 0.42rem 0.6rem; border: 1px solid rgba(148, 163, 184, 0.16); border-radius: 0.5rem; background: rgba(5, 10, 18, 0.8); color: #8499b2; font-size: 0.54rem; font-weight: 600; backdrop-filter: blur(8px); pointer-events: none; }
+    .legend-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 0.28rem; }
+    .map-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.8rem 1.1rem; border-top: 1px solid var(--line); }
+    .endpoint-line { display: flex; align-items: center; gap: 0.45rem; min-width: 0; color: #a8bad0; font-size: 0.65rem; }
+    .endpoint-line .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+    .map-fallback { position: absolute; inset: 0; z-index: 460; display: none; place-items: center; padding: 1rem; background: rgba(5, 10, 18, 0.88); text-align: center; backdrop-filter: blur(5px); }
+    .map-fallback.is-visible { display: grid; }
+
+    /* Leaflet custom markers */
+    .signal-pin { position: relative; display: grid; place-items: center; width: 34px; height: 34px; }
+    .signal-pin__core { position: relative; z-index: 2; display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid rgba(251, 113, 133, 0.65); border-radius: 50%; background: #1a0d16; color: #fda4af; font-family: var(--mono); font-size: 8px; font-weight: 800; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7); transition: 0.2s; }
+    .signal-pin.priority .signal-pin__core { border-color: #34d399; background: #05251b; color: #6ee7b7; box-shadow: 0 0 16px rgba(52, 211, 153, 0.75); }
+    .signal-pin.manual .signal-pin__core { border-color: #fbbf24; background: #241a04; color: #fcd34d; }
+    .signal-pin__ring { position: absolute; inset: -5px; border-radius: 50%; border: 1px solid rgba(52, 211, 153, 0.55); opacity: 0; }
+    .signal-pin.priority .signal-pin__ring { opacity: 1; animation: map-ping 1.8s ease-out infinite; }
+    @keyframes map-ping { 0% { transform: scale(0.7); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+    .ambulance-pin { position: relative; display: grid; place-items: center; width: 42px; height: 42px; }
+    .ambulance-pin__pulse { position: absolute; inset: 0; border-radius: 50%; background: rgba(45, 212, 191, 0.25); animation: map-ping 1.5s ease-out infinite; }
+    .ambulance-pin__core { position: relative; z-index: 2; display: grid; place-items: center; width: 32px; height: 32px; border: 2px solid #5eead4; border-radius: 50%; background: #04211d; color: #5eead4; box-shadow: 0 0 22px rgba(45, 212, 191, 0.8); }
+    .ambulance-pin__core .icon { width: 17px; height: 17px; }
+    .map-endpoint { display: grid; place-items: center; width: 26px; height: 26px; border: 2px solid #38bdf8; border-radius: 50%; background: #052235; color: #7dd3fc; font-size: 7px; font-weight: 800; font-family: var(--mono); box-shadow: 0 0 14px rgba(56, 189, 248, 0.55); }
+    .map-endpoint.destination { border-color: #2dd4bf; background: #04231e; color: #5eead4; box-shadow: 0 0 14px rgba(45, 212, 191, 0.6); }
+    .route-line-glow { filter: drop-shadow(0 0 6px rgba(45, 212, 191, 0.9)); }
+
+    /* ——— Simulation / stream ——— */
+    .speed-group { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 0.55rem; background: rgba(0, 0, 0, 0.16); }
+    .speed-btn { min-width: 2.3rem; padding: 0.32rem 0.4rem; border: 0; border-radius: 0.38rem; background: transparent; color: #7f94ad; font-family: var(--mono); font-size: 0.61rem; font-weight: 700; }
+    .speed-btn:hover { color: #dbeafe; }
+    .speed-btn.is-active { background: rgba(45, 212, 191, 0.14); color: #5eead4; box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.18); }
+    .stream-list { display: flex; flex-direction: column; }
+    .stream-item { display: flex; gap: 0.65rem; padding: 0.65rem 1rem; border-bottom: 1px solid rgba(148, 163, 184, 0.07); }
+    .stream-item:last-child { border-bottom: 0; }
+    .stream-icon { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; flex: none; border-radius: 0.48rem; background: rgba(56, 189, 248, 0.08); color: #7dd3fc; }
+    .stream-icon .icon { width: 0.8rem; height: 0.8rem; }
+    .stream-icon.is-green { background: rgba(52, 211, 153, 0.09); color: #6ee7b7; }
+    .stream-icon.is-amber { background: rgba(251, 191, 36, 0.09); color: #fcd34d; }
+    .stream-icon.is-rose { background: rgba(251, 113, 133, 0.09); color: #fda4af; }
+    .stream-copy { min-width: 0; flex: 1; }
+    .stream-title { color: #c9d7e8; font-size: 0.7rem; font-weight: 650; line-height: 1.35; }
+    .stream-meta { margin-top: 0.18rem; color: #607690; font-size: 0.57rem; }
+    .fallback-banner { display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 1rem; padding: 0.7rem 0.9rem; border: 1px solid rgba(251, 191, 36, 0.28); border-radius: 0.75rem; background: rgba(251, 191, 36, 0.07); color: #fcd34d; font-size: 0.67rem; line-height: 1.5; }
+    .fallback-banner.is-rose { border-color: rgba(251, 113, 133, 0.3); background: rgba(251, 113, 133, 0.07); color: #fda4af; }
+    .fallback-banner .icon { width: 1rem; height: 1rem; margin-top: 0.05rem; }
+
+    /* ——— Hospital ——— */
+    .patient-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+    .patient-avatar { display: grid; place-items: center; width: 3rem; height: 3rem; flex: none; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 0.9rem; background: rgba(56, 189, 248, 0.08); color: #7dd3fc; }
+    .patient-avatar .icon { width: 1.4rem; height: 1.4rem; }
+    .patient-id { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; }
+    .patient-condition { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.69rem; line-height: 1.5; }
+    .vitals-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .vital-card { position: relative; overflow: hidden; padding: 0.95rem; border: 1px solid var(--line); border-radius: 0.9rem; background: linear-gradient(145deg, rgba(13, 25, 42, 0.9), rgba(8, 17, 30, 0.92)); }
+    .vital-card::after { content: ""; position: absolute; right: -20px; bottom: -28px; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(45, 212, 191, 0.1), transparent 70%); }
+    .vital-value { display: flex; align-items: baseline; gap: 0.3rem; margin-top: 0.2rem; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .vital-number { font-size: clamp(1.75rem, 4vw, 2.45rem); font-weight: 750; letter-spacing: -0.055em; line-height: 1; color: #f1f5f9; }
+    .vital-unit { color: #607690; font-size: 0.61rem; font-weight: 600; }
+    .vital-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.5rem; color: #6f849e; font-size: 0.57rem; }
+    .vital-trend { color: #6ee7b7; font-size: 0.56rem; font-weight: 700; }
+    .heart-pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.5); animation: heart-pulse 1s infinite; }
+    @keyframes heart-pulse { 0% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.45); } 70% { box-shadow: 0 0 0 8px rgba(251, 113, 133, 0); } 100% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0); } }
+    .is-masked .vital-number, .is-masked .vital-foot, .is-masked .patient-id, .is-masked .patient-condition { filter: blur(7px); user-select: none; }
+    .ecg-wrap { position: relative; height: 195px; overflow: hidden; border: 1px solid rgba(52, 211, 153, 0.12); border-radius: 0.8rem; background-color: #04120f; background-image: linear-gradient(rgba(52, 211, 153, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(52, 211, 153, 0.07) 1px, transparent 1px), linear-gradient(rgba(52, 211, 153, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(52, 211, 153, 0.035) 1px, transparent 1px); background-size: 100% 38px, 38px 100%, 100% 7.6px, 7.6px 100%; }
+    #ecgCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .ecg-mask { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 1rem; background: rgba(4, 12, 17, 0.7); backdrop-filter: blur(7px); text-align: center; }
+    .ecg-mask .lock-orb { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: 0 auto 0.65rem; border: 1px solid rgba(251, 191, 36, 0.28); border-radius: 50%; background: rgba(251, 191, 36, 0.08); color: #fcd34d; }
+    .ecg-mask p { margin: 0; color: #cbd5e1; font-size: 0.72rem; font-weight: 650; }
+    .ecg-mask small { display: block; max-width: 20rem; margin-top: 0.3rem; color: #6f849e; font-size: 0.6rem; line-height: 1.5; }
+    .consent-switch { position: relative; display: inline-flex; align-items: center; width: 3.5rem; height: 1.95rem; flex: none; padding: 3px; border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 99px; background: #1a2a40; transition: 0.22s; }
+    .consent-switch > span { display: block; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: #8194ab; transition: transform 0.22s, background 0.22s, box-shadow 0.22s; }
+    .consent-switch.is-on { border-color: rgba(52, 211, 153, 0.55); background: rgba(52, 211, 153, 0.18); }
+    .consent-switch.is-on > span { transform: translateX(1.53rem); background: #34d399; box-shadow: 0 0 12px rgba(52, 211, 153, 0.8); }
+    .consent-switch:disabled { opacity: 0.45; }
+    .consent-state { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.63rem; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; }
+    .consent-state.ok { color: #6ee7b7; }
+    .consent-state.off { color: #fcd34d; }
+    .readiness-list { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.55rem; }
+    .readiness-item { display: flex; align-items: flex-start; gap: 0.6rem; width: 100%; padding: 0.55rem 0.5rem; border: 1px solid transparent; border-radius: 0.6rem; background: transparent; color: inherit; text-align: left; transition: 0.16s; }
+    .readiness-item:hover { border-color: var(--line); background: rgba(148, 163, 184, 0.045); }
+    .readiness-check { display: grid; place-items: center; width: 1.15rem; height: 1.15rem; flex: none; margin-top: 0.05rem; border: 1px solid #34465e; border-radius: 0.3rem; background: #0c1828; color: transparent; transition: 0.16s; }
+    .readiness-check .icon { width: 0.7rem; height: 0.7rem; stroke-width: 3; }
+    .readiness-item.is-done .readiness-check { border-color: rgba(52, 211, 153, 0.55); background: rgba(52, 211, 153, 0.18); color: #6ee7b7; }
+    .readiness-item.is-done .readiness-label { color: #9db0c9; text-decoration: line-through; text-decoration-color: rgba(52, 211, 153, 0.4); }
+    .readiness-label { display: block; font-size: 0.66rem; font-weight: 650; color: #c7d5e6; line-height: 1.3; }
+    .readiness-detail { display: block; margin-top: 0.14rem; font-size: 0.55rem; color: #607690; }
+    .readiness-item:disabled { opacity: 0.7; }
+    .readiness-item:disabled:hover { border-color: transparent; background: transparent; }
+    .eta-big { font-family: var(--mono); font-size: clamp(2.6rem, 7vw, 4rem); font-weight: 750; letter-spacing: -0.07em; line-height: 0.95; }
+    .eta-big small { font-size: 0.38em; letter-spacing: 0; color: #607690; }
+
+    /* ——— Overview ——— */
+    .overview-hero { position: relative; overflow: hidden; padding: clamp(1.3rem, 3.5vw, 2.4rem); border: 1px solid rgba(45, 212, 191, 0.22); border-radius: 1.2rem; background: radial-gradient(700px 360px at 85% 0%, rgba(45, 212, 191, 0.16), transparent 65%), radial-gradient(500px 300px at 0% 100%, rgba(56, 189, 248, 0.09), transparent 70%), linear-gradient(130deg, #0d1c30, #07111e); box-shadow: var(--shadow); }
+    .overview-hero::before { content: ""; position: absolute; inset: 0; opacity: 0.35; background-image: linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at 70% 30%, #000, transparent 72%); pointer-events: none; }
+    .overview-title { position: relative; max-width: 50rem; margin: 0.75rem 0 0; font-size: clamp(1.65rem, 4.2vw, 2.65rem); line-height: 1.05; letter-spacing: -0.045em; font-weight: 750; }
+    .overview-copy { position: relative; max-width: 43rem; margin: 0.8rem 0 0; color: #a9bbcf; font-size: 0.85rem; line-height: 1.65; }
+    .hero-stat-grid { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; margin-top: 1.3rem; max-width: 42rem; }
+    .hero-stat { padding: 0.7rem 0.8rem; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 0.7rem; background: rgba(5, 10, 18, 0.3); backdrop-filter: blur(8px); }
+    .hero-stat strong { display: block; font-family: var(--mono); font-size: 1.15rem; letter-spacing: -0.04em; color: #f1f5f9; }
+    .hero-stat span { display: block; margin-top: 0.2rem; color: #71869f; font-size: 0.56rem; line-height: 1.35; text-transform: uppercase; letter-spacing: 0.07em; }
+    .silo-card { position: relative; overflow: hidden; padding: 1.1rem; border: 1px solid var(--line); border-radius: 0.95rem; background: linear-gradient(160deg, rgba(15, 29, 48, 0.88), rgba(8, 17, 30, 0.96)); }
+    .silo-card::after { content: ""; position: absolute; top: -40px; right: -40px; width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle, rgba(251, 113, 133, 0.11), transparent 70%); }
+    .silo-icon, .solution-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; margin-bottom: 0.8rem; border-radius: 0.65rem; }
+    .silo-icon { border: 1px solid rgba(251, 113, 133, 0.2); background: rgba(251, 113, 133, 0.08); color: #fda4af; }
+    .silo-icon.amber { border-color: rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.08); color: #fcd34d; }
+    .silo-icon.violet { border-color: rgba(167, 139, 250, 0.2); background: rgba(167, 139, 250, 0.08); color: #c4b5fd; }
+    .silo-icon .icon, .solution-icon .icon { width: 1.05rem; height: 1.05rem; }
+    .silo-title { margin: 0; font-size: 0.79rem; font-weight: 700; }
+    .silo-copy { margin: 0.35rem 0 0; color: #7f94ad; font-size: 0.66rem; line-height: 1.55; }
+    .solution-card { padding: 1rem; border: 1px solid var(--line); border-radius: 0.9rem; background: rgba(10, 20, 35, 0.7); }
+    .solution-icon { border: 1px solid rgba(45, 212, 191, 0.2); background: rgba(45, 212, 191, 0.08); color: #5eead4; }
+    .solution-icon.sky { border-color: rgba(56, 189, 248, 0.2); background: rgba(56, 189, 248, 0.08); color: #7dd3fc; }
+    .solution-icon.violet { border-color: rgba(167, 139, 250, 0.2); background: rgba(167, 139, 250, 0.08); color: #c4b5fd; }
+    .fallback-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+    .fallback-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .pilot-card { position: relative; overflow: hidden; padding: 1.2rem; border: 1px solid var(--line); border-radius: 1rem; background: linear-gradient(145deg, rgba(13, 25, 42, 0.95), rgba(8, 17, 30, 0.98)); }
+    .pilot-value { font-family: var(--mono); font-size: clamp(2.3rem, 5vw, 3.1rem); font-weight: 750; letter-spacing: -0.07em; line-height: 1; }
+    .pilot-bar { height: 6px; overflow: hidden; border-radius: 99px; background: #16263b; }
+    .pilot-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2dd4bf, #38bdf8); }
+    .sdg-card { position: relative; overflow: hidden; padding: 1.3rem; border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 1rem; background: radial-gradient(380px 200px at 100% 0%, rgba(45, 212, 191, 0.15), transparent 70%), rgba(8, 24, 26, 0.65); }
+    .sdg-number { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid rgba(52, 211, 153, 0.35); border-radius: 0.75rem; background: rgba(52, 211, 153, 0.12); color: #6ee7b7; font-family: var(--mono); font-size: 1.2rem; font-weight: 800; }
+
+    /* ——— Mobile nav ——— */
+    .mobile-nav { display: none; position: fixed; inset: auto 0 0; z-index: 700; padding: 0.4rem max(0.6rem, env(safe-area-inset-right)) calc(0.4rem + env(safe-area-inset-bottom)) max(0.6rem, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(5, 10, 18, 0.92); backdrop-filter: blur(18px); }
+    .mobile-nav-inner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem; max-width: 32rem; margin: 0 auto; }
+    .mobile-nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; min-height: 3.15rem; border: 1px solid transparent; border-radius: 0.6rem; background: transparent; color: #7489a2; font-size: 0.55rem; font-weight: 700; }
+    .mobile-nav-btn .icon { width: 1.05rem; height: 1.05rem; }
+    .mobile-nav-btn.active { border-color: rgba(45, 212, 191, 0.18); background: rgba(45, 212, 191, 0.09); color: #5eead4; }
+
+    /* ——— Modals / drawer / toasts ——— */
+    .modal, .drawer { position: fixed; inset: 0; z-index: 1200; }
+    .modal { display: grid; place-items: center; padding: 1rem; }
+    .modal-backdrop, .drawer-backdrop { position: absolute; inset: 0; background: rgba(2, 6, 13, 0.78); backdrop-filter: blur(9px); }
+    .modal-card { position: relative; z-index: 1; width: min(640px, 100%); max-height: min(90vh, 760px); overflow-y: auto; border: 1px solid var(--line-strong); border-radius: 1.1rem; background: linear-gradient(180deg, #0e1c2f, #07111e); box-shadow: 0 35px 100px -30px #000; animation: modal-in 0.2s ease both; }
+    .modal-card.is-sm { width: min(430px, 100%); }
+    @keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
+    .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.2rem; border-bottom: 1px solid var(--line); }
+    .modal-body { padding: 1.2rem; }
+    .modal-foot { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; padding: 0.9rem 1.2rem; border-top: 1px solid var(--line); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
+    .form-field { min-width: 0; }
+    .form-field.full { grid-column: 1 / -1; }
+    .form-field label { display: block; margin-bottom: 0.35rem; color: #91a6bf; font-size: 0.6rem; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
+    .input { width: 100%; min-height: 2.55rem; padding: 0.55rem 0.65rem; border: 1px solid var(--line-strong); border-radius: 0.55rem; background: #081422; color: #e2eaf5; font-size: 0.75rem; outline: none; transition: border-color 0.16s, box-shadow 0.16s; }
+    .input:focus { border-color: rgba(45, 212, 191, 0.55); box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1); }
+    .input::placeholder { color: #52677f; }
+    select.input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, #7f94ad 50%), linear-gradient(135deg, #7f94ad 50%, transparent 50%); background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 1.8rem; }
+    .input-hint { margin: 0.35rem 0 0; color: #607690; font-size: 0.58rem; line-height: 1.45; }
+    .drawer-panel { position: absolute; z-index: 1; top: 0; right: 0; bottom: 0; display: flex; width: min(430px, 100%); flex-direction: column; border-left: 1px solid var(--line-strong); background: linear-gradient(180deg, #0b1829, #060e18); box-shadow: -30px 0 90px -30px #000; animation: drawer-in 0.22s ease both; }
+    @keyframes drawer-in { from { transform: translateX(24px); opacity: 0.7; } to { transform: none; opacity: 1; } }
+    .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--line); }
+    .audit-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+    .audit-item { display: flex; gap: 0.6rem; padding: 0.65rem 0.55rem; border-bottom: 1px solid rgba(148, 163, 184, 0.07); }
+    .audit-item:last-child { border-bottom: 0; }
+    .audit-dot { width: 7px; height: 7px; margin-top: 0.35rem; flex: none; border-radius: 50%; background: #38bdf8; }
+    .audit-dot.green { background: var(--green); }
+    .audit-dot.amber { background: var(--amber); }
+    .audit-dot.rose { background: var(--rose); }
+    .audit-copy { min-width: 0; flex: 1; }
+    .audit-action { color: #d3dfec; font-size: 0.68rem; font-weight: 650; line-height: 1.4; }
+    .audit-detail { margin-top: 0.15rem; color: #7088a4; font-size: 0.59rem; line-height: 1.45; }
+    .audit-meta { margin-top: 0.28rem; color: #4f6580; font-family: var(--mono); font-size: 0.52rem; }
+    .toast-stack { position: fixed; z-index: 1400; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: 0.45rem; width: min(340px, calc(100vw - 2rem)); pointer-events: none; }
+    .toast { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.7rem 0.8rem; border: 1px solid var(--line-strong); border-left: 3px solid var(--brand); border-radius: 0.6rem; background: rgba(10, 22, 37, 0.97); color: #cbd5e1; font-size: 0.67rem; line-height: 1.45; box-shadow: 0 20px 50px -20px #000; animation: toast-in 0.22s ease both; pointer-events: auto; }
+    .toast.is-rose { border-left-color: var(--rose); }
+    .toast.is-amber { border-left-color: var(--amber); }
+    .toast .icon { width: 0.95rem; height: 0.95rem; margin-top: 0.05rem; color: var(--brand); }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ——— Responsive ——— */
+    @media (min-width: 768px) {
+      .incident-hero { grid-template-columns: minmax(0, 1.6fr) minmax(220px, 0.75fr); align-items: center; }
+      .incident-side { border-top: 0; border-left: 1px solid var(--line); padding-top: 0; padding-left: 1.3rem; }
+      .modal-foot.sticky-mobile { position: sticky; bottom: 0; background: #081321; }
+    }
+    @media (max-width: 1023px) {
+      .sidebar { display: none; }
+      .main-wrap { margin-left: 0; }
+      .mobile-nav { display: block; }
+      .main-content { padding-bottom: 5.2rem; }
+    }
+    @media (max-width: 767px) {
+      .topbar { min-height: 58px; padding: 0.55rem 0.8rem; }
+      .topbar .topbar-kicker, .topbar .user-role, .topbar .clock-pill, .topbar-actions > .status-pill { display: none; }
+      .topbar-title { font-size: 0.86rem; }
+      .user-name { max-width: 5.5rem; }
+      .topbar-actions { gap: 0.35rem; }
+      .main-content { padding: 0.85rem 0.8rem 5.2rem; }
+      .page-heading { align-items: flex-start; }
+      .page-title { font-size: 1.5rem; }
+      .page-sub { font-size: 0.76rem; }
+      .page-actions { width: 100%; }
+      .page-actions .btn { flex: 1; }
+      .vitals-grid { gap: 0.55rem; }
+      .vital-card { padding: 0.8rem; }
+      .ecg-wrap { height: 165px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .modal { padding: 0; align-items: end; }
+      .modal-card { max-height: 92vh; border-radius: 1.1rem 1.1rem 0 0; }
+      .toast-stack { bottom: 4.7rem; }
+      .map-legend { max-width: calc(100% - 1.4rem); }
+      .signal-state { width: auto; }
+      .hero-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 420px) {
+      .incident-meta-grid { grid-template-columns: 1fr; }
+      .user-meta { display: none; }
+      .topbar-actions .user-chip { padding: 0.22rem; }
+      .topbar-actions .user-avatar { width: 1.8rem; height: 1.8rem; }
+      .signal-name { max-width: 9rem; }
+      .page-actions { flex-direction: column; }
+      .page-actions .btn { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+    }
+  </style>
 </head>
-<body class="min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col antialiased selection:bg-blue-600 selection:text-white max-w-[100vw] overflow-x-hidden">
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+    <defs>
+      <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h3.6l2.2-7 4.4 14 2.6-7H21"/></symbol>
+      <symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-3a5 5 0 0 1 10 0v3"/><path d="M5 21h14"/><path d="M12 3v2"/><path d="m4.6 6.4 1.5 1.5"/><path d="m19.4 6.4-1.5 1.5"/><path d="M2.5 14h2"/><path d="M19.5 14h2"/><path d="M10 18h4"/></symbol>
+      <symbol id="i-traffic" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="2.2"/><circle cx="12" cy="7" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="17" r="1.2"/></symbol>
+      <symbol id="i-ambulance" viewBox="0 0 24 24"><path d="M3 16V8h10l4 4h4v4"/><path d="M3 16h2"/><path d="M9 16h6"/><path d="M19 16h2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M8 10v4"/><path d="M6 12h4"/></symbol>
+      <symbol id="i-hospital" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-5h6v5"/><path d="M12 7v4"/><path d="M10 9h4"/></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15"/><path d="M15 6v15"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="m3 3 18 18"/><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c7 0 10 7 10 7a17 17 0 0 1-3.2 4.2"/><path d="M6.2 6.2C3.9 7.9 2 12 2 12s3 7 10 7a10.8 10.8 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+      <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="m2 2 20 20"/><path d="M8.5 8.5A12 12 0 0 1 21 8.8"/><path d="M5 12.2a12 12 0 0 1 5-2.6"/><path d="M8.5 15.5a7.5 7.5 0 0 1 7 0"/><path d="M12 19h.01"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10"/><path d="M18 6h2"/><circle cx="16" cy="6" r="2"/><path d="M4 12h2"/><path d="M10 12h10"/><circle cx="8" cy="12" r="2"/><path d="M4 18h8"/><path d="M16 18h4"/><circle cx="14" cy="18" r="2"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12"/><path d="m18 6-12 12"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h4"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14"/><path d="M15 5v14"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 5.8a5.5 5.5 0 0 0-7.8 0L12 6.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 22l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+      <symbol id="i-lungs" viewBox="0 0 24 24"><path d="M12 4v9"/><path d="M9 8c-2 1-3 4-3 7v3h4v-5c0-2-1-3-1-5Z"/><path d="M15 8c2 1 3 4 3 7v3h-4v-5c0-2 1-3 1-5Z"/></symbol>
+      <symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 2.5S5 10 5 15a7 7 0 0 0 14 0c0-5-7-12.5-7-12.5Z"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.5 3 14 0 18"/><path d="M12 3c-3 3.5-3 14 0 18"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4L12 3Z"/><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h7"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.8 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+      <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path d="M19 5a10 10 0 0 1 0 14"/><path d="M5 19A10 10 0 0 1 5 5"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+      <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M6 3v5a5 5 0 0 0 10 0V3"/><path d="M6 5H4v4a5 5 0 0 0 5 5h1"/><path d="M14 5h2v4a5 5 0 0 1-5 5h-1"/><path d="M18 12v3a4 4 0 0 0 4 4"/><circle cx="18" cy="10" r="2"/></symbol>
+      <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+      <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    </defs>
+  </svg>
 
-    <!-- ========================================================================= -->
-    <!-- 1. TOP COMMAND BAR: BRANDING, RBAC SELECTOR & SAFETY CONTROLS             -->
-    <!-- ========================================================================= -->
-    <header class="bg-ops-panel border-b border-ops-border px-3 py-2.5 shrink-0 z-[1000] space-y-2">
-        <!-- Row 1: Identity, RBAC Role Switcher & Primary Dispatch Controls -->
-        <div class="flex flex-wrap items-center justify-between gap-2 min-w-0">
-            
-            <!-- Brand & GNDEC Coordinates -->
-            <div class="flex items-center gap-2 min-w-0">
-                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-400/30 flex items-center justify-center text-white shrink-0 shadow-sm">
-                    <i class="fa-solid fa-truck-medical text-xs sm:text-sm"></i>
-                </div>
-                <div class="min-w-0">
-                    <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
-                        <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white truncate">PulseRoute</h1>
-                        <span class="px-1.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-[9px] font-semibold uppercase shrink-0">
-                            HACKNAUTS 2.0
-                        </span>
-                        <span class="hidden md:inline-block text-[10px] text-slate-400 font-mono truncate">
-                            • Team Brain Bytes (GNDEC)
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono truncate">
-                        <span class="text-slate-300">INC-LDH-084</span>
-                        <span>•</span>
-                        <span class="truncate">30.86° N, 75.86° E</span>
-                    </div>
-                </div>
-            </div>
+  <!-- ————————————————— LOGIN GATE ————————————————— -->
+  <div id="loginScreen" class="relative z-10 min-h-screen overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 opacity-[0.18]" style="background-image:linear-gradient(rgba(148,163,184,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.18) 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(circle at 50% 40%,#000,transparent 76%);"></div>
+    <div class="pointer-events-none absolute -right-40 -top-48 h-[34rem] w-[34rem] rounded-full bg-teal-400/10 blur-[110px]"></div>
+    <div class="pointer-events-none absolute -bottom-56 -left-44 h-[30rem] w-[30rem] rounded-full bg-sky-500/10 blur-[110px]"></div>
 
-            <!-- Right Controls: RBAC Selector, Global Human Override & Dispatch Run -->
-            <div class="flex items-center gap-1.5 shrink-0">
-                <!-- RBAC Role-Based Access Control Selector (Slide 5) -->
-                <div class="relative">
-                    <select id="rbac-role-select" onchange="switchRbacRole(this.value)" aria-label="Role-Based Access Control Selector" class="min-h-[38px] bg-ops-surface hover:bg-ops-elevated border border-ops-border rounded-md pl-2 pr-6 py-1 text-[10px] sm:text-xs font-mono text-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer">
-                        <option value="ADMIN">RBAC: Traffic Admin</option>
-                        <option value="EMT">RBAC: Ambulance EMT</option>
-                        <option value="HOSPITAL">RBAC: Hospital Trauma</option>
-                        <option value="CITIZEN">RBAC: Citizen / Driver</option>
-                    </select>
-                </div>
-
-                <!-- Global Human Override Emergency Switch (Slide 4 & 5 Safety Condition) -->
-                <button id="btn-global-override" onclick="toggleGlobalHumanOverride()" class="min-h-[38px] px-2.5 py-1 rounded-md bg-ops-surface hover:bg-ops-elevated border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-mono font-semibold transition-colors flex items-center gap-1.5" title="Slide 4 & 5: Manual Human Override">
-                    <i class="fa-solid fa-hand text-[10px]"></i>
-                    <span class="hidden md:inline">OVERRIDE</span>
-                    <span class="md:hidden">OVR</span>
-                </button>
-
-                <!-- Start / Pause Incident Simulation -->
-                <button id="btn-dispatch-toggle" onclick="toggleDispatch()" class="min-h-[38px] px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm">
-                    <i id="dispatch-icon" class="fa-solid fa-play text-[10px]"></i>
-                    <span id="dispatch-label">Dispatch</span>
-                </button>
-
-                <!-- Reset -->
-                <button onclick="resetSystem()" class="min-h-[38px] min-w-[38px] rounded-md bg-ops-surface hover:bg-ops-elevated border border-ops-border text-slate-400 hover:text-white text-xs flex items-center justify-center transition-colors" title="Reset Incident">
-                    <i class="fa-solid fa-rotate-left text-[11px]"></i>
-                </button>
-            </div>
+    <div class="relative mx-auto grid min-h-screen w-full max-w-[1440px] items-center gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:px-12 lg:py-10">
+      <div class="min-w-0">
+        <div class="flex items-center gap-3">
+          <span class="brand-mark"><svg class="icon"><use href="#i-pulse"></use></svg></span>
+          <div>
+            <span class="brand-name text-[1.1rem]">PulseRoute</span>
+            <span class="brand-sub">Emergency Corridor OS</span>
+          </div>
         </div>
 
-        <!-- Row 2: Safety-by-Design Badges & 5-Step Technical Implementation Pipeline -->
-        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-2 pt-1.5 border-t border-ops-border/80 min-w-0">
-            
-            <!-- Safety-by-Design Badges (Slide 5) -->
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 shrink-0 no-scrollbar">
-                <span class="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-300 font-mono text-[9px] whitespace-nowrap shrink-0">
-                    <i class="fa-solid fa-grid mr-1"></i>SUMO SIMULATED GRID
-                </span>
-                <span id="badge-consent-top" class="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[9px] whitespace-nowrap shrink-0">
-                    <i class="fa-solid fa-user-shield mr-1"></i>CONSENT: GRANTED
-                </span>
-                <span class="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-300 font-mono text-[9px] whitespace-nowrap shrink-0">
-                    <i class="fa-solid fa-lock mr-1"></i>AES-256 + POSTGIS
-                </span>
-                <span id="badge-network-top" class="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[9px] whitespace-nowrap shrink-0">
-                    <i class="fa-solid fa-wifi mr-1"></i>KAFKA/WS: ONLINE
-                </span>
-            </div>
+        <div class="mt-8 flex flex-wrap items-center gap-2">
+          <span class="chip chip-teal"><span class="live-dot"></span> Hacknauts 2.0</span>
+          <span class="chip">Team Brain Bytes · GNDEC</span>
+        </div>
 
-            <!-- 5-Step Technical Implementation Pipeline Tracker (Slide 5 Exact Sequence) -->
-            <div class="flex items-center gap-1 overflow-x-auto pb-0.5 min-w-0 font-mono text-[9px] tabular-nums">
-                <div id="pipe-step-1" class="pipe-step px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 whitespace-nowrap shrink-0">
-                    1. Dispatch
-                </div>
-                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
-                <div id="pipe-step-2" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
-                    2. GNN Route
-                </div>
-                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
-                <div id="pipe-step-3" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
-                    3. Signals &amp; Alerts
-                </div>
-                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
-                <div id="pipe-step-4" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
-                    4. Telemetry
-                </div>
-                <i class="fa-solid fa-chevron-right text-[8px] text-slate-600 shrink-0"></i>
-                <div id="pipe-step-5" class="pipe-step px-2 py-0.5 rounded border border-ops-border bg-ops-surface text-slate-400 whitespace-nowrap shrink-0">
-                    5. Audit Log
-                </div>
-            </div>
-        </div>
-    </header>
+        <h1 class="mt-5 max-w-2xl text-[clamp(2.15rem,6.2vw,4.4rem)] font-bold leading-[0.98] tracking-[-0.055em]">
+          Every second<br class="hidden sm:block" />
+          <span class="bg-gradient-to-r from-white via-teal-100 to-teal-300 bg-clip-text text-transparent">has a route.</span>
+        </h1>
+        <p class="mt-5 max-w-xl text-[0.92rem] leading-relaxed text-slate-400 sm:text-[0.98rem]">
+          An AI-powered emergency response corridor that connects traffic signals, ambulances, trauma teams and citizens into one live loop — from the siren to the surgery.
+        </p>
 
-    <!-- MOBILE COMPACT TELEMETRY STRIP (< lg screens) -->
-    <div class="lg:hidden bg-ops-surface border-b border-ops-border px-3 py-2 flex items-center justify-between text-[11px] font-mono tabular-nums shrink-0">
-        <div class="flex items-center gap-2 min-w-0">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
-            <span id="mobile-road-label" class="text-slate-200 font-sans font-medium truncate">Gill Rd (GNDEC Gate)</span>
+        <div class="mt-7 max-w-xl rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3.5 backdrop-blur-sm">
+          <div class="flex items-center justify-between gap-3 text-[0.57rem] font-bold uppercase tracking-[0.15em] text-slate-500">
+            <span>GNDEC</span><span>5 signalized junctions</span><span>DMC</span>
+          </div>
+          <div class="relative mt-3 flex items-center justify-between px-1">
+            <div class="absolute left-2 right-2 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-sky-400/40 via-teal-400/60 to-teal-400/40"></div>
+            <span class="relative z-10 grid h-8 w-8 place-items-center rounded-full border border-sky-400/40 bg-[#061a28] text-sky-300"><svg class="icon icon-sm"><use href="#i-map-pin"></use></svg></span>
+            <span class="relative z-10 h-3 w-3 rounded-full border border-teal-400/60 bg-teal-400/20"></span>
+            <span class="relative z-10 h-3 w-3 rounded-full border border-teal-400/60 bg-teal-400/20"></span>
+            <span class="relative z-10 h-3 w-3 rounded-full border border-teal-400/60 bg-teal-400/20"></span>
+            <span class="relative z-10 h-3 w-3 rounded-full border border-teal-400/60 bg-teal-400/20"></span>
+            <span class="relative z-10 grid h-8 w-8 place-items-center rounded-full border border-teal-400/40 bg-[#041f1c] text-teal-300"><svg class="icon icon-sm"><use href="#i-hospital"></use></svg></span>
+          </div>
+          <div class="mt-3 flex items-center justify-between text-[0.55rem] text-slate-500">
+            <span>Pickup · Gill Road</span>
+            <span class="font-mono text-teal-300/80">9.9 km · 5 nodes</span>
+            <span>Trauma bay · Tagore Nagar</span>
+          </div>
         </div>
-        <div class="flex items-center gap-3 shrink-0 ml-2">
-            <span class="text-slate-400"><strong id="mobile-dist" class="text-white">6.8</strong>km</span>
-            <span class="text-emerald-400 font-bold">ETA <span id="mobile-eta">10:45</span></span>
+
+        <div class="mt-7 grid max-w-xl gap-2.5 sm:grid-cols-3">
+          <div class="flex items-start gap-2.5">
+            <span class="mt-0.5 grid h-7 w-7 place-items-center rounded-lg bg-teal-400/10 text-teal-300"><svg class="icon icon-sm"><use href="#i-traffic"></use></svg></span>
+            <div><p class="text-[0.68rem] font-semibold text-slate-200">Smart corridor</p><p class="mt-0.5 text-[0.58rem] leading-relaxed text-slate-500">Signals clear as the ambulance approaches.</p></div>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <span class="mt-0.5 grid h-7 w-7 place-items-center rounded-lg bg-sky-400/10 text-sky-300"><svg class="icon icon-sm"><use href="#i-heart"></use></svg></span>
+            <div><p class="text-[0.68rem] font-semibold text-slate-200">Live patient sync</p><p class="mt-0.5 text-[0.58rem] leading-relaxed text-slate-500">Vitals and ETA reach the trauma team early.</p></div>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <span class="mt-0.5 grid h-7 w-7 place-items-center rounded-lg bg-violet-400/10 text-violet-300"><svg class="icon icon-sm"><use href="#i-users"></use></svg></span>
+            <div><p class="text-[0.68rem] font-semibold text-slate-200">Citizen guidance</p><p class="mt-0.5 text-[0.58rem] leading-relaxed text-slate-500">Nearby phones get a lane-clear alert.</p></div>
+          </div>
         </div>
+      </div>
+
+      <div class="w-full max-w-md justify-self-center lg:justify-self-end">
+        <div class="rounded-[1.35rem] border border-white/10 bg-[#081321]/90 p-5 shadow-[0_40px_120px_-40px_rgba(0,0,0,.95)] backdrop-blur-xl sm:p-6">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.18em] text-teal-400/80">Secure access</p>
+              <h2 class="mt-1 text-xl font-bold tracking-tight">Enter the response loop</h2>
+            </div>
+            <span class="grid h-9 w-9 place-items-center rounded-xl border border-teal-400/20 bg-teal-400/10 text-teal-300"><svg class="icon"><use href="#i-shield"></use></svg></span>
+          </div>
+          <p class="mt-2 text-[0.72rem] leading-relaxed text-slate-500">Choose your operational role. No password is required in demo mode — the session and all data stay in this browser.</p>
+
+          <div class="mt-4 space-y-2">
+            <button type="button" class="role-card" data-role="admin">
+              <span class="role-icon" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.25);color:#fcd34d"><svg class="icon"><use href="#i-traffic"></use></svg></span>
+              <span class="min-w-0 flex-1"><span class="role-name">Municipal Traffic Admin</span><span class="role-desc">Command signals, launch incidents, monitor the corridor.</span></span>
+              <svg class="icon role-arrow"><use href="#i-chevron-right"></use></svg>
+            </button>
+            <button type="button" class="role-card" data-role="emt">
+              <span class="role-icon" style="background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.25);color:#fda4af"><svg class="icon"><use href="#i-ambulance"></use></svg></span>
+              <span class="min-w-0 flex-1"><span class="role-name">Ambulance EMT</span><span class="role-desc">Create transfers, track ETA and coordinate dispatch.</span></span>
+              <svg class="icon role-arrow"><use href="#i-chevron-right"></use></svg>
+            </button>
+            <button type="button" class="role-card" data-role="hospital">
+              <span class="role-icon" style="background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.25);color:#5eead4"><svg class="icon"><use href="#i-hospital"></use></svg></span>
+              <span class="min-w-0 flex-1"><span class="role-name">Hospital Trauma Staff</span><span class="role-desc">Patient sync, consent, readiness and handover.</span></span>
+              <svg class="icon role-arrow"><use href="#i-chevron-right"></use></svg>
+            </button>
+          </div>
+
+          <button type="button" id="demoLoginBtn" class="btn btn-primary mt-3 w-full py-3 text-[0.76rem]">
+            <svg class="icon"><use href="#i-sparkles"></use></svg>
+            Demo Quick-Login
+            <span class="ml-auto rounded-md bg-black/15 px-1.5 py-0.5 text-[0.5rem] font-extrabold tracking-wider">NO PASSWORD</span>
+          </button>
+
+          <div class="mt-4 flex items-start gap-2 border-t border-white/[0.07] pt-3.5">
+            <svg class="icon icon-sm mt-0.5 text-slate-600"><use href="#i-lock"></use></svg>
+            <p class="text-[0.57rem] leading-relaxed text-slate-600">Role-based access · consent-aware vitals · audited actions. Demo data is stored locally on this device only.</p>
+          </div>
+        </div>
+        <p class="mt-4 text-center text-[0.58rem] text-slate-600">Hacknauts 2.0 · Team Brain Bytes · Guru Nanak Dev Engineering College, Ludhiana</p>
+      </div>
     </div>
+  </div>
 
-    <!-- ========================================================================= -->
-    <!-- MAIN RESPONSIVE COMMAND WORKSPACE                                         -->
-    <!-- ========================================================================= -->
-    <main class="flex-1 flex flex-col lg:grid lg:grid-cols-12 min-h-0 overflow-x-hidden max-w-[100vw]">
+  <!-- ————————————————— APPLICATION ————————————————— -->
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="sidebar-inner">
+        <div class="sidebar-brand-row">
+          <a href="#" class="brand" data-page-link="dashboard" aria-label="PulseRoute dashboard">
+            <span class="brand-mark"><svg class="icon"><use href="#i-pulse"></use></svg></span>
+            <span><span class="brand-name">PulseRoute</span><span class="brand-sub">Corridor OS</span></span>
+          </a>
+          <span class="chip chip-teal !px-2 !py-1 !text-[0.48rem]">v2.0</span>
+        </div>
 
-        <!-- ===================================================================== -->
-        <!-- TAB 1 / COLUMN 1: ATCS SIGNALS, CV COMPLIANCE & RISK FALLBACKS        -->
-        <!-- ===================================================================== -->
-        <section id="panel-corridor" class="mobile-tab-panel lg:col-span-3 flex flex-col bg-ops-panel lg:border-r border-ops-border min-h-0 lg:overflow-y-auto order-2 lg:order-1 divide-y divide-ops-border">
-            
-            <!-- Module 1A: 5 ATCS Signals + Computer Vision Lane Compliance -->
-            <div class="p-3.5 space-y-3 min-w-0">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                        <i class="fa-solid fa-traffic-light text-emerald-400 text-xs shrink-0"></i>
-                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200 truncate">ATCS &amp; CV Lane Sync</h2>
-                    </div>
-                    <span id="green-count-badge" class="px-2 py-0.5 rounded bg-ops-bg border border-ops-border font-mono text-[10px] text-slate-400 shrink-0 tabular-nums">
-                        0/5 GREEN
-                    </span>
+        <div class="mx-1 mb-1 flex items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5">
+          <span class="user-avatar !h-8 !w-8" id="sidebarAvatar"><svg class="icon"><use href="#i-user"></use></svg></span>
+          <div class="min-w-0">
+            <p class="truncate text-[0.67rem] font-semibold text-slate-200" id="sidebarRole">Municipal Traffic Admin</p>
+            <p class="text-[0.53rem] text-slate-500"><span class="live-dot mr-1 inline-block !h-1 !w-1"></span>Session active</p>
+          </div>
+        </div>
+
+        <nav class="mt-1">
+          <p class="nav-group-label">Operations</p>
+          <button type="button" class="nav-item active" data-page="dashboard">
+            <svg class="icon"><use href="#i-map"></use></svg><span>Live Corridor</span><span class="nav-badge" id="navSignalBadge">0</span>
+          </button>
+          <button type="button" class="nav-item" data-page="hospital">
+            <svg class="icon"><use href="#i-stethoscope"></use></svg><span>Trauma Bay</span>
+          </button>
+          <p class="nav-group-label">Program</p>
+          <button type="button" class="nav-item" data-page="overview">
+            <svg class="icon"><use href="#i-grid"></use></svg><span>Project Overview</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-incident" id="sidebarIncident">
+          <div class="flex items-center justify-between gap-2">
+            <span class="mini-label !mb-0 !text-[0.5rem]">Active transfer</span>
+            <span class="live-dot !h-1 !w-1"></span>
+          </div>
+          <p class="mt-1 truncate text-[0.72rem] font-semibold text-slate-100" id="sidebarIncidentType">Standby</p>
+          <p class="mt-0.5 truncate text-[0.57rem] text-slate-500" id="sidebarIncidentRoute">No active emergency</p>
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="font-mono text-[0.57rem] text-rose-300/80" id="sidebarIncidentId">—</span>
+            <span class="font-mono text-[0.62rem] font-semibold text-teal-300" id="sidebarIncidentEta">--:--</span>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <button type="button" class="sidebar-foot-btn" id="auditBtnSide">
+            <svg class="icon"><use href="#i-clipboard"></use></svg><span>Audit trail</span><span class="ml-auto font-mono text-[0.55rem] text-slate-600" id="auditCountSide">0</span>
+          </button>
+          <button type="button" class="sidebar-foot-btn" id="resetDemoBtn">
+            <svg class="icon"><use href="#i-rotate"></use></svg><span>Reset demo data</span>
+          </button>
+          <button type="button" class="sidebar-foot-btn" id="logoutBtnSide">
+            <svg class="icon"><use href="#i-logout"></use></svg><span>Switch role</span>
+          </button>
+          <p class="team-stamp">Hacknauts 2.0<br />Team Brain Bytes · GNDEC<br /><span class="text-slate-700">Browser-native · localStorage</span></p>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <span class="brand-mark !h-8 !w-8 !rounded-lg lg:hidden"><svg class="icon !h-5 !w-5"><use href="#i-pulse"></use></svg></span>
+          <div class="min-w-0">
+            <p class="topbar-kicker" id="topbarKicker">Command center</p>
+            <h1 class="topbar-title truncate" id="topbarTitle">Live corridor</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="status-pill" id="networkPill"><span class="live-dot"></span><span id="networkPillText">Cloud link</span></span>
+          <span class="clock-pill"><svg class="icon icon-sm text-slate-500"><use href="#i-clock"></use></svg><span id="liveClock">--:--:--</span></span>
+          <button type="button" class="icon-btn" id="auditBtnTop" aria-label="Open audit trail">
+            <svg class="icon"><use href="#i-clipboard"></use></svg>
+          </button>
+          <div class="user-chip">
+            <span class="user-avatar" id="topbarAvatar"><svg class="icon"><use href="#i-user"></use></svg></span>
+            <span class="user-meta"><span class="user-name" id="topbarRole">Traffic Admin</span><span class="user-role" id="topbarRoleLong">Municipal Traffic Admin</span></span>
+          </div>
+          <button type="button" class="icon-btn" id="logoutBtnTop" aria-label="Switch role">
+            <svg class="icon"><use href="#i-logout"></use></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="main-content" id="mainContent">
+        <!-- ——— LIVE CORRIDOR ——— -->
+        <section class="page" id="page-dashboard" data-page-panel="dashboard">
+          <div class="page-heading">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="eyebrow"><svg class="icon icon-sm text-teal-400"><use href="#i-map-pin"></use></svg> Ludhiana · GNDEC → DMC</span>
+                <span class="chip chip-green"><span class="live-dot !h-1 !w-1"></span> Live corridor</span>
+              </div>
+              <h2 class="page-title">Emergency corridor command</h2>
+              <p class="page-sub">One ambulance. Five junctions. One synchronized response from dispatch to the trauma bay.</p>
+            </div>
+            <div class="page-actions">
+              <button type="button" class="btn btn-primary" id="createIncidentBtn">
+                <svg class="icon"><use href="#i-plus"></use></svg> New emergency
+              </button>
+              <button type="button" class="btn" data-sim-toggle>
+                <svg class="icon" data-sim-icon><use href="#i-pause"></use></svg><span data-sim-label>Pause run</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="fallback-banner hidden" id="networkBanner">
+            <svg class="icon"><use href="#i-wifi-off"></use></svg>
+            <div><strong class="font-semibold">Network outage fallback active.</strong> Cloud sync is marked offline. Corridor priority continues on local edge logic and radio/SMS handover. <span class="opacity-70">(Demo toggle — Overview tab)</span></div>
+          </div>
+          <div class="fallback-banner is-rose hidden" id="overrideBanner">
+            <svg class="icon"><use href="#i-sliders"></use></svg>
+            <div><strong class="font-semibold">Human override is engaged.</strong> Automatic pre-emption is suspended. Only manual admin switches can grant signal priority.</div>
+          </div>
+
+          <div class="incident-hero" id="activeIncidentPanel">
+            <div class="incident-hero-main">
+              <div class="incident-kicker">
+                <span class="chip chip-rose" id="incidentStatusChip"><span class="live-dot rose !h-1 !w-1"></span> Active emergency</span>
+                <span class="chip" id="incidentSeverity">Critical</span>
+                <span class="chip chip-sky" id="incidentIdChip">INC-2401</span>
+              </div>
+              <h3 class="incident-type" id="incidentType">Cardiac emergency</h3>
+              <p class="incident-route"><svg class="icon"><use href="#i-route"></use></svg><span id="incidentRoute">GNDEC Main Gate → DMC &amp; Hospital</span></p>
+              <div class="incident-meta-grid">
+                <div class="incident-meta"><span class="mini-label">Ambulance</span><span class="incident-meta-value" id="incidentAmbulance">AMB-17 · ALS</span></div>
+                <div class="incident-meta"><span class="mini-label">Patient sync</span><span class="incident-meta-value" id="incidentPatient">Cardiac · male 54</span></div>
+                <div class="incident-meta"><span class="mini-label">Corridor</span><span class="incident-meta-value" id="incidentCorridor">5 signalized junctions</span></div>
+                <div class="incident-meta"><span class="mini-label">Hospital readiness</span><span class="incident-meta-value" id="incidentReadiness">—</span></div>
+              </div>
+            </div>
+            <div class="incident-side">
+              <div class="flex items-end justify-between gap-2">
+                <div><span class="mini-label">Simulated arrival</span><div class="hero-eta" id="heroEta">--:--</div></div>
+                <span class="chip chip-teal" id="simSpeedChip">6× sim</span>
+              </div>
+              <div class="mt-3 progress-track is-rose"><span id="heroProgressBar" style="width:0%"></span></div>
+              <div class="hero-progress-meta"><span><span class="mono" id="heroProgressPct">0%</span> of corridor traversed</span><span id="heroDistance">9.9 km</span></div>
+              <div class="hero-actions">
+                <button type="button" class="btn btn-sm" data-page-link="hospital"><svg class="icon"><use href="#i-heart"></use></svg> Trauma bay</button>
+                <button type="button" class="btn btn-sm btn-danger" id="resolveIncidentBtn">Complete transfer</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <div class="panel min-w-0 xl:col-span-8">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Leaflet · live street map</p>
+                  <h3 class="panel-title">GNDEC → DMC corridor</h3>
                 </div>
-
-                <div id="signal-cards-list" class="space-y-2 min-w-0">
-                    <!-- Populated via JS -->
+                <div class="flex items-center gap-1.5">
+                  <span class="status-pill is-live" id="mapStatusPill"><span class="live-dot"></span> Live GPS</span>
+                  <span class="chip" id="mapSignalChip">0/5 green</span>
                 </div>
+              </div>
+              <div class="map-shell">
+                <div id="corridorMap" aria-label="Live map of the emergency corridor from GNDEC to DMC Hospital"></div>
+                <div class="map-overlay-top">
+                  <span class="map-chip"><svg class="icon icon-sm text-teal-300"><use href="#i-map-pin"></use></svg> Ludhiana · 9.9 km</span>
+                  <span class="map-chip" id="mapModeChip"><span class="live-dot !h-1 !w-1"></span> Auto priority</span>
+                </div>
+                <div class="map-legend">
+                  <span><i class="legend-dot" style="background:#34d399"></i>Priority green</span>
+                  <span><i class="legend-dot" style="background:#fb7185"></i>Red / hold</span>
+                  <span><i class="legend-dot" style="background:#fbbf24"></i>Manual override</span>
+                  <span><i class="legend-dot" style="background:#5eead4"></i>Ambulance</span>
+                </div>
+                <div class="map-fallback" id="mapFallback">
+                  <div><svg class="icon icon-lg mx-auto text-amber-300"><use href="#i-wifi-off"></use></svg><p class="mt-2 text-sm font-semibold">Map tiles unavailable</p><p class="mt-1 text-xs text-slate-500">Corridor logic continues on local state. Reconnect to restore the street map.</p></div>
+                </div>
+              </div>
+              <div class="map-footer">
+                <div class="endpoint-line"><span class="dot bg-sky-400"></span><span class="truncate">GNDEC Main Gate</span></div>
+                <div class="hidden text-[0.57rem] text-slate-600 sm:block">Gill Road → GT Road → Hambran Road</div>
+                <div class="endpoint-line"><span class="dot bg-teal-400"></span><span class="truncate">DMC &amp; Hospital</span></div>
+                <div class="chip" id="mapEtaChip">ETA --:--</div>
+              </div>
             </div>
 
-            <!-- Module 1B: Key Risk & Fallback Simulator (Slide 4) -->
-            <div class="p-3.5 space-y-3 bg-ops-surface/30 min-w-0">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                        <i class="fa-solid fa-shield-halved text-amber-400 text-xs shrink-0"></i>
-                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200 truncate">Slide 4: Risk Fallbacks</h2>
-                    </div>
-                    <span class="text-[9px] font-mono text-slate-400 shrink-0">FAIL-SAFE</span>
+            <div class="panel flex min-w-0 flex-col xl:col-span-4">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Signal priority</p>
+                  <h3 class="panel-title">Corridor junctions</h3>
                 </div>
-
-                <!-- Risk 1: Network Outage Fallback -->
-                <div class="bg-ops-bg border border-ops-border rounded-lg p-3 space-y-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[11px] font-medium text-slate-200 truncate">1. Network Outage Fallback</span>
-                        <label class="relative inline-flex items-center cursor-pointer shrink-0 min-h-[32px] min-w-[32px]">
-                            <input type="checkbox" id="risk-network-toggle" onchange="toggleNetworkOutage(this.checked)" class="sr-only peer">
-                            <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
-                        </label>
-                    </div>
-                    <p id="risk-network-desc" class="text-[10px] text-slate-400 leading-snug break-words">
-                        Normal: Real-time FastAPI WebSocket + Kafka telemetry active.
-                    </p>
-                </div>
-
-                <!-- Risk 2: Inaccurate Data Filter -->
-                <div class="bg-ops-bg border border-ops-border rounded-lg p-3 space-y-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[11px] font-medium text-slate-200 truncate">2. Inaccurate Data Filter</span>
-                        <label class="relative inline-flex items-center cursor-pointer shrink-0 min-h-[32px] min-w-[32px]">
-                            <input type="checkbox" id="risk-anomaly-toggle" onchange="toggleDataAnomaly(this.checked)" class="sr-only peer">
-                            <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
-                        </label>
-                    </div>
-                    <p id="risk-anomaly-desc" class="text-[10px] text-slate-400 leading-snug break-words">
-                        Kalman GPS &amp; vital threshold guard active (0 false alerts).
-                    </p>
-                </div>
-
-                <!-- Risk 3: Unsafe Driver Distraction Guard -->
-                <div class="bg-ops-bg border border-ops-border rounded-lg p-3 space-y-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[11px] font-medium text-slate-200 truncate">3. Driver Distraction Guard</span>
-                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-mono text-[9px] shrink-0">ENFORCED</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 leading-snug break-words">
-                        Locks commuter UI to 3-word audio prompts above 20 km/h.
-                    </p>
-                </div>
+                <span class="chip chip-green" id="signalSummaryChip">0 / 5 green</span>
+              </div>
+              <div class="signal-list flex-1" id="signalList" aria-live="polite"></div>
+              <div class="signal-footer" id="signalModeNote">Auto priority grants a green wave as the ambulance approaches. Admin can override each junction.</div>
             </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <div class="panel min-w-0 xl:col-span-8">
+              <div class="panel-head">
+                <div><p class="eyebrow">Immutable trail</p><h3 class="panel-title">Live event stream</h3></div>
+                <button type="button" class="btn btn-sm btn-ghost" id="auditBtnStream">View audit trail <svg class="icon"><use href="#i-arrow-right"></use></svg></button>
+              </div>
+              <div class="stream-list" id="eventStream"></div>
+            </div>
+            <div class="panel min-w-0 xl:col-span-4">
+              <div class="panel-head">
+                <div><p class="eyebrow">Demo controls</p><h3 class="panel-title">Simulation</h3></div>
+                <span class="status-pill is-live" id="simStatusPill"><span class="live-dot"></span> Running</span>
+              </div>
+              <div class="panel-body space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div><span class="mini-label">Run speed</span><p class="text-[0.62rem] text-slate-500">Accelerated for judging</p></div>
+                  <div class="speed-group" role="group" aria-label="Simulation speed">
+                    <button type="button" class="speed-btn" data-speed="1">1×</button>
+                    <button type="button" class="speed-btn is-active" data-speed="6">6×</button>
+                    <button type="button" class="speed-btn" data-speed="12">12×</button>
+                  </div>
+                </div>
+                <div class="h-px bg-white/[0.06]"></div>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm flex-1" data-sim-toggle><svg class="icon" data-sim-icon><use href="#i-pause"></use></svg><span data-sim-label>Pause</span></button>
+                  <button type="button" class="btn btn-sm flex-1" id="restartRunBtn"><svg class="icon"><use href="#i-rotate"></use></svg> Restart run</button>
+                </div>
+                <p class="text-[0.59rem] leading-relaxed text-slate-600">The ambulance advances along the mapped polyline. Each junction flips to priority green when it enters the 400 m approach window, then returns to normal after the vehicle passes.</p>
+              </div>
+            </div>
+          </div>
         </section>
 
-        <!-- ===================================================================== -->
-        <!-- TAB 2 / COLUMN 2: LUDHIANA SUMO/GIS MAP + PILOT MEASUREMENT MATRIX    -->
-        <!-- ===================================================================== -->
-        <section id="panel-map-pilot" class="mobile-tab-panel hidden lg:flex lg:col-span-6 flex-col bg-ops-bg lg:border-r border-ops-border min-h-0 order-1 lg:order-2 lg:overflow-y-auto">
-            
-            <!-- Desktop Corridor Header -->
-            <div class="hidden lg:flex bg-ops-panel/90 border-b border-ops-border px-4 py-2.5 items-center justify-between gap-3 text-xs shrink-0">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="min-w-0">
-                        <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Ambulance Unit</span>
-                        <span class="font-mono font-semibold text-white">PB-10-EM-4092</span>
+        <!-- ——— TRAUMA BAY ——— -->
+        <section class="page hidden" id="page-hospital" data-page-panel="hospital">
+          <div class="page-heading">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="eyebrow"><svg class="icon icon-sm text-teal-400"><use href="#i-hospital"></use></svg> DMC &amp; Hospital · Trauma Bay 01</span>
+                <span class="chip chip-sky" id="hospitalCorridorChip">Inbound</span>
+              </div>
+              <h2 class="page-title">Patient sync &amp; trauma readiness</h2>
+              <p class="page-sub">Live vitals, explicit consent and a pre-arrival checklist — so the team is ready before the doors open.</p>
+            </div>
+            <div class="page-actions">
+              <span class="status-pill is-live" id="hospitalLinkPill"><span class="live-dot"></span> Linked to corridor</span>
+              <button type="button" class="btn" data-page-link="dashboard"><svg class="icon"><use href="#i-map"></use></svg> View corridor</button>
+            </div>
+          </div>
+
+          <div class="fallback-banner hidden" id="hospitalNetworkBanner">
+            <svg class="icon"><use href="#i-wifi-off"></use></svg>
+            <div><strong class="font-semibold">Offline fallback:</strong> vital signs are being relayed from the onboard monitor. Hospital pre-alert continues via radio/SMS.</div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <div class="min-w-0 space-y-4 xl:col-span-8">
+              <div class="panel" id="patientCard">
+                <div class="panel-body">
+                  <div class="patient-strip">
+                    <span class="patient-avatar"><svg class="icon"><use href="#i-user"></use></svg></span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="patient-id" id="patientId">Patient A-2087 · Male, 54</h3>
+                        <span class="chip chip-rose" id="patientTriage">STEMI · critical</span>
+                      </div>
+                      <p class="patient-condition" id="patientCondition">Chest pain, diaphoresis, onset 28 min ago. En route from GNDEC pickup.</p>
                     </div>
-                    <span class="h-6 w-px bg-ops-border shrink-0"></span>
+                    <div class="flex flex-col items-start gap-1.5 sm:items-end">
+                      <span class="consent-state ok" id="patientConsentChip"><span class="live-dot !h-1 !w-1"></span> Consent verified</span>
+                      <span class="font-mono text-[0.55rem] text-slate-600" id="patientIncidentRef">INC-2401</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="vitals-grid" id="vitalsGrid">
+                <div class="vital-card">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="mini-label !mb-0">Heart rate</span>
+                    <span class="heart-pulse"></span>
+                  </div>
+                  <div class="vital-value"><span class="vital-number is-maskable" id="hrValue">--</span><span class="vital-unit">bpm</span></div>
+                  <div class="vital-foot"><span class="is-maskable" id="hrTrend">Sinus rhythm</span><span class="vital-trend is-maskable" id="hrZone">Target</span></div>
+                </div>
+                <div class="vital-card">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="mini-label !mb-0">SpO₂ saturation</span>
+                    <svg class="icon icon-sm text-sky-400"><use href="#i-droplet"></use></svg>
+                  </div>
+                  <div class="vital-value"><span class="vital-number is-maskable" id="spo2Value">--</span><span class="vital-unit">%</span></div>
+                  <div class="vital-foot"><span class="is-maskable" id="spo2Trend">On room air</span><span class="vital-trend is-maskable" id="spo2Zone">Stable</span></div>
+                </div>
+                <div class="vital-card">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="mini-label !mb-0">Blood pressure</span>
+                    <svg class="icon icon-sm text-rose-300"><use href="#i-heart"></use></svg>
+                  </div>
+                  <div class="vital-value"><span class="vital-number is-maskable" id="bpValue">--/--</span><span class="vital-unit">mmHg</span></div>
+                  <div class="vital-foot"><span class="is-maskable" id="bpTrend">MAP 85</span><span class="vital-trend is-maskable" id="bpZone">Monitor</span></div>
+                </div>
+                <div class="vital-card">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="mini-label !mb-0">Respiration</span>
+                    <svg class="icon icon-sm text-violet-300"><use href="#i-lungs"></use></svg>
+                  </div>
+                  <div class="vital-value"><span class="vital-number is-maskable" id="respValue">--</span><span class="vital-unit">/min</span></div>
+                  <div class="vital-foot"><span class="is-maskable" id="respTrend">Spontaneous</span><span class="vital-trend is-maskable" id="respZone">Stable</span></div>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="eyebrow">Streaming · lead II</p>
+                    <h3 class="panel-title">Live ECG monitor</h3>
+                  </div>
+                  <span class="status-pill is-live" id="ecgStatus"><span class="live-dot"></span> Waveform live</span>
+                </div>
+                <div class="panel-body">
+                  <div class="ecg-wrap">
+                    <canvas id="ecgCanvas" aria-label="Animated ECG waveform for the patient"></canvas>
+                    <div class="ecg-mask hidden" id="ecgMask">
+                      <div>
+                        <span class="lock-orb"><svg class="icon"><use href="#i-lock"></use></svg></span>
+                        <p>Vitals locked for privacy</p>
+                        <small>Patient consent is withdrawn. Waveform, heart rate and saturation are masked until consent is restored by authorised trauma staff.</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-[0.57rem] text-slate-600">
+                    <span class="mono" id="ecgFooter">25 mm/s · 10 mm/mV · simulated device feed</span>
+                    <span class="flex items-center gap-1.5"><svg class="icon icon-sm text-slate-600"><use href="#i-shield"></use></svg> Consent-aware display · DPDP-aligned demo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="min-w-0 space-y-4 xl:col-span-4">
+              <div class="panel" id="consentPanel">
+                <div class="panel-head">
+                  <div><p class="eyebrow">Privacy control</p><h3 class="panel-title">Patient consent</h3></div>
+                  <span class="chip chip-amber" id="consentBadge">Explicit</span>
+                </div>
+                <div class="panel-body">
+                  <div class="flex items-center justify-between gap-4">
                     <div class="min-w-0">
-                        <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Active
+                      <span class="consent-state ok" id="consentState"><span class="live-dot !h-1 !w-1"></span> Consent granted</span>
+                      <p class="mt-1 text-[0.6rem] leading-relaxed text-slate-500" id="consentUpdated">Captured just now</p>
+                    </div>
+                    <button type="button" class="consent-switch is-on" id="consentToggle" role="switch" aria-checked="true" aria-label="Toggle patient consent for vitals sharing">
+                      <span></span>
+                    </button>
+                  </div>
+                  <p class="mt-3 rounded-lg border border-amber-300/15 bg-amber-300/[0.05] p-2.5 text-[0.58rem] leading-relaxed text-amber-100/70" id="consentNote">
+                    Consent covers live vitals and pre-arrival handover only. Withdrawing it immediately masks all patient-identifying and clinical values on this screen.
+                  </p>
+                </div>
+              </div>
+
+              <div class="panel" id="etaPanel">
+                <div class="panel-head">
+                  <div><p class="eyebrow">Hospital ETA</p><h3 class="panel-title">Arrival countdown</h3></div>
+                  <span class="status-pill is-live" id="etaStatusPill"><span class="live-dot"></span> Inbound</span>
+                </div>
+                <div class="panel-body">
+                  <span class="mini-label">Estimated arrival</span>
+                  <div class="eta-big" id="hospitalEta">--:--</div>
+                  <p class="mt-1 text-[0.63rem] text-slate-500" id="hospitalEtaLabel">No active transfer</p>
+                  <div class="mt-3 progress-track"><span id="hospitalProgressBar" style="width:0%"></span></div>
+                  <div class="mt-1.5 flex items-center justify-between gap-2 text-[0.56rem] text-slate-600">
+                    <span><span class="mono" id="hospitalProgressPct">0%</span> corridor cleared</span>
+                    <span id="hospitalDistance">9.9 km</span>
+                  </div>
+                  <div class="mt-3 grid grid-cols-2 gap-2">
+                    <div class="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2">
+                      <span class="mini-label !text-[0.48rem]">Incident</span>
+                      <span class="block truncate font-mono text-[0.62rem] text-slate-300" id="hospitalIncidentId">—</span>
+                    </div>
+                    <div class="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2">
+                      <span class="mini-label !text-[0.48rem]">Arrival window</span>
+                      <span class="block truncate font-mono text-[0.62rem] text-teal-300" id="hospitalArrivalWindow">--:--</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-head">
+                  <div><p class="eyebrow">Pre-arrival</p><h3 class="panel-title">Readiness checklist</h3></div>
+                  <span class="chip chip-green" id="readinessPct">0%</span>
+                </div>
+                <div class="px-3 pt-3">
+                  <div class="progress-track !h-[5px]"><span id="readinessBar" style="width:0%"></span></div>
+                </div>
+                <div class="readiness-list" id="readinessList"></div>
+                <div class="signal-footer" id="readinessNote">Toggling an item writes the readiness state to localStorage and audits the update.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ——— PROJECT OVERVIEW ——— -->
+        <section class="page hidden" id="page-overview" data-page-panel="overview">
+          <div class="page-heading">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="eyebrow"><svg class="icon icon-sm text-teal-400"><use href="#i-sparkles"></use></svg> Hacknauts 2.0 · Team Brain Bytes</span>
+                <span class="chip chip-teal">Project brief</span>
+              </div>
+              <h2 class="page-title">PulseRoute overview</h2>
+              <p class="page-sub">The problem, the 3-in-1 response loop, the fallbacks and the pilot targets behind the corridor.</p>
+            </div>
+            <div class="page-actions">
+              <span class="chip"><svg class="icon icon-sm"><use href="#i-database"></use></svg> Local-first demo</span>
+              <button type="button" class="btn" data-page-link="dashboard"><svg class="icon"><use href="#i-map"></use></svg> Open corridor</button>
+            </div>
+          </div>
+
+          <div class="overview-hero">
+            <div class="relative">
+              <span class="chip chip-teal"><span class="live-dot !h-1 !w-1"></span> SDG 3 · Good health &amp; well-being</span>
+              <h2 class="overview-title">Clearing the corridor between a siren and the surgery.</h2>
+              <p class="overview-copy">PulseRoute is a browser-native response layer that unifies three silos — traffic signals, hospital preparation and citizen awareness — into one live emergency loop. No new hardware. No backend. Just the screens already in the room.</p>
+              <div class="hero-stat-grid">
+                <div class="hero-stat"><strong>9.9 km</strong><span>GNDEC → DMC pilot corridor</span></div>
+                <div class="hero-stat"><strong><span id="ovSignalsGreen">0</span> / 5</strong><span>Junctions currently prioritized</span></div>
+                <div class="hero-stat"><strong id="ovActiveIncidents">0</strong><span>Active emergency in local state</span></div>
+                <div class="hero-stat"><strong id="ovAuditCount">0</strong><span>Audited actions on this device</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-7">
+            <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+              <div><p class="eyebrow">The problem</p><h3 class="text-lg font-bold tracking-tight">Three silos. One delay multiplier.</h3></div>
+              <span class="chip chip-rose"><svg class="icon icon-sm"><use href="#i-alert"></use></svg> Fragmented response</span>
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <article class="silo-card">
+                <span class="silo-icon"><svg class="icon"><use href="#i-traffic"></use></svg></span>
+                <h4 class="silo-title">Traffic delays</h4>
+                <p class="silo-copy">Signals, congestion and unclear lane ownership add avoidable minutes before the ambulance even reaches the hospital gate.</p>
+                <div class="mt-3 flex items-center gap-2"><span class="chip chip-rose !text-[0.5rem]">Time lost</span><span class="text-[0.58rem] text-slate-600">Junction by junction</span></div>
+              </article>
+              <article class="silo-card">
+                <span class="silo-icon amber"><svg class="icon"><use href="#i-hospital"></use></svg></span>
+                <h4 class="silo-title">Late hospital prep</h4>
+                <p class="silo-copy">Trauma teams learn about the patient on arrival. Blood, imaging, ICU and specialists start moving far too late.</p>
+                <div class="mt-3 flex items-center gap-2"><span class="chip chip-amber !text-[0.5rem]">Readiness gap</span><span class="text-[0.58rem] text-slate-600">Handover starts cold</span></div>
+              </article>
+              <article class="silo-card">
+                <span class="silo-icon violet"><svg class="icon"><use href="#i-users"></use></svg></span>
+                <h4 class="silo-title">Uncertain public action</h4>
+                <p class="silo-copy">Citizens want to help but do not know which lane to clear, which route to avoid or when to make space.</p>
+                <div class="mt-3 flex items-center gap-2"><span class="chip !text-[0.5rem]">Behaviour gap</span><span class="text-[0.58rem] text-slate-600">No live guidance</span></div>
+              </article>
+            </div>
+          </div>
+
+          <div class="mt-7">
+            <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+              <div><p class="eyebrow">The solution</p><h3 class="text-lg font-bold tracking-tight">One loop. Three coordinated layers.</h3></div>
+              <span class="chip chip-teal"><svg class="icon icon-sm"><use href="#i-route"></use></svg> 3-in-1</span>
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <article class="solution-card">
+                <div class="flex items-start justify-between gap-2"><span class="solution-icon"><svg class="icon"><use href="#i-traffic"></use></svg></span><span class="chip chip-teal !text-[0.48rem]">Layer 01</span></div>
+                <h4 class="mt-2 text-[0.82rem] font-bold">Smart corridor</h4>
+                <p class="mt-1 text-[0.66rem] leading-relaxed text-slate-500">Approach-aware pre-emption creates a rolling green wave across five junctions, with a human override always available.</p>
+                <div class="mt-3 h-1 overflow-hidden rounded-full bg-slate-800"><span class="block h-full w-[82%] rounded-full bg-gradient-to-r from-teal-400 to-sky-400"></span></div>
+                <p class="mt-1.5 font-mono text-[0.54rem] text-teal-400/70">400 m approach window</p>
+              </article>
+              <article class="solution-card">
+                <div class="flex items-start justify-between gap-2"><span class="solution-icon sky"><svg class="icon"><use href="#i-heart"></use></svg></span><span class="chip chip-sky !text-[0.48rem]">Layer 02</span></div>
+                <h4 class="mt-2 text-[0.82rem] font-bold">Live patient sync</h4>
+                <p class="mt-1 text-[0.66rem] leading-relaxed text-slate-500">Consent-aware vitals, ECG and ETA stream to the trauma bay so the team can prepare the right bay, blood and specialist.</p>
+                <div class="mt-3 h-1 overflow-hidden rounded-full bg-slate-800"><span class="block h-full w-[76%] rounded-full bg-gradient-to-r from-sky-400 to-cyan-400"></span></div>
+                <p class="mt-1.5 font-mono text-[0.54rem] text-sky-400/70">Consent-gated by default</p>
+              </article>
+              <article class="solution-card">
+                <div class="flex items-start justify-between gap-2"><span class="solution-icon violet"><svg class="icon"><use href="#i-users"></use></svg></span><span class="chip !text-[0.48rem]">Layer 03</span></div>
+                <h4 class="mt-2 text-[0.82rem] font-bold">Citizen guidance</h4>
+                <p class="mt-1 text-[0.66rem] leading-relaxed text-slate-500">Geo-fenced alerts tell nearby drivers and pedestrians which lane to clear, turning passive onlookers into active responders.</p>
+                <div class="mt-3 h-1 overflow-hidden rounded-full bg-slate-800"><span class="block h-full w-[68%] rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400"></span></div>
+                <p class="mt-1.5 font-mono text-[0.54rem] text-violet-400/70">Roadside + mobile alerts</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="mt-7 grid gap-4 lg:grid-cols-12">
+            <div class="panel min-w-0 lg:col-span-7">
+              <div class="panel-head">
+                <div><p class="eyebrow">Risk fallbacks</p><h3 class="panel-title">Graceful degradation, by design</h3></div>
+                <span class="chip chip-amber" id="fallbackModeChip">All systems nominal</span>
+              </div>
+              <div class="panel-body pt-2">
+                <div class="fallback-row">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="silo-icon amber !mb-0 !h-8 !w-8"><svg class="icon"><use href="#i-wifi-off"></use></svg></span>
+                      <h4 class="text-[0.77rem] font-bold">Network outage</h4>
+                      <span class="chip chip-green !text-[0.48rem]" id="netOutageState">Off</span>
+                    </div>
+                    <p class="mt-2 text-[0.63rem] leading-relaxed text-slate-500">If the cloud link drops, the corridor shifts to local edge logic: on-vehicle GPS, pre-cached signal plans and radio/SMS pre-alerts. No single point of failure.</p>
+                  </div>
+                  <button type="button" class="consent-switch" id="netOutageToggle" role="switch" aria-checked="false" aria-label="Toggle network outage fallback"><span></span></button>
+                </div>
+                <div class="fallback-row">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="silo-icon violet !mb-0 !h-8 !w-8"><svg class="icon"><use href="#i-sliders"></use></svg></span>
+                      <h4 class="text-[0.77rem] font-bold">Human override</h4>
+                      <span class="chip chip-green !text-[0.48rem]" id="overrideState">Off</span>
+                    </div>
+                    <p class="mt-2 text-[0.63rem] leading-relaxed text-slate-500">The traffic admin can suspend automation at any time. Signals then follow only explicit manual commands — automation never removes human authority.</p>
+                  </div>
+                  <button type="button" class="consent-switch" id="humanOverrideToggle" role="switch" aria-checked="false" aria-label="Toggle human override mode"><span></span></button>
+                </div>
+                <p class="mt-2 text-[0.55rem] leading-relaxed text-slate-600" id="fallbackPermissionNote">Only the Municipal Traffic Admin can change fallback modes. Changes are written to the local audit log.</p>
+              </div>
+            </div>
+
+            <div class="panel min-w-0 lg:col-span-5">
+              <div class="panel-head">
+                <div><p class="eyebrow">Pilot targets</p><h3 class="panel-title">What success looks like</h3></div>
+                <span class="chip">Ludhiana pilot</span>
+              </div>
+              <div class="panel-body space-y-3">
+                <div class="pilot-card !p-3.5">
+                  <div class="flex items-end justify-between gap-3">
+                    <div><span class="mini-label">Transit time</span><span class="pilot-value text-teal-300">25<span class="text-base">%</span></span></div>
+                    <span class="chip chip-green">Faster</span>
+                  </div>
+                  <p class="mt-1 text-[0.6rem] text-slate-500">Target reduction in ambulance transit time across the pilot corridor.</p>
+                  <div class="pilot-bar mt-2.5"><span style="width:25%"></span></div>
+                </div>
+                <div class="pilot-card !p-3.5">
+                  <div class="flex items-end justify-between gap-3">
+                    <div><span class="mini-label">CPR readiness</span><span class="pilot-value text-sky-300">40<span class="text-base">%</span></span></div>
+                    <span class="chip chip-sky">Citizens</span>
+                  </div>
+                  <p class="mt-1 text-[0.6rem] text-slate-500">Target share of alerted bystanders ready to start hands-only CPR.</p>
+                  <div class="pilot-bar mt-2.5"><span class="w-[40%]"></span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5"><strong class="block font-mono text-base text-slate-100">&lt;90s</strong><span class="mt-0.5 block text-[0.52rem] leading-tight text-slate-600">Hospital pre-alert after dispatch</span></div>
+                  <div class="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5"><strong class="block font-mono text-base text-slate-100">5/5</strong><span class="mt-0.5 block text-[0.52rem] leading-tight text-slate-600">Signals coordinated per corridor</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-4 lg:grid-cols-12">
+            <div class="sdg-card lg:col-span-7">
+              <div class="flex flex-wrap items-start gap-3">
+                <span class="sdg-number">3</span>
+                <div class="min-w-0 flex-1">
+                  <span class="chip chip-green">SDG alignment</span>
+                  <h3 class="mt-2 text-lg font-bold tracking-tight">Good health &amp; well-being</h3>
+                  <p class="mt-1.5 max-w-xl text-[0.68rem] leading-relaxed text-slate-400">Every minute saved in the corridor is a minute returned to definitive care. PulseRoute supports SDG 3.6 (halving road-traffic deaths and injuries) and SDG 3.d (strengthening early-warning and emergency-response capacity).</p>
+                  <div class="mt-3 flex flex-wrap gap-1.5"><span class="chip chip-green !text-[0.48rem]">3.6</span><span class="chip chip-green !text-[0.48rem]">3.d</span><span class="chip !text-[0.48rem]">Emergency care</span><span class="chip !text-[0.48rem]">Public health</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="panel lg:col-span-5">
+              <div class="panel-head"><div><p class="eyebrow">Built at</p><h3 class="panel-title">Hacknauts 2.0</h3></div><span class="chip chip-teal">GNDEC</span></div>
+              <div class="panel-body">
+                <p class="text-[0.7rem] font-semibold text-slate-200">Team Brain Bytes</p>
+                <p class="mt-1 text-[0.61rem] leading-relaxed text-slate-500">A zero-backend, browser-native prototype built with HTML5, Tailwind, Leaflet and vanilla JavaScript. State persists locally so every demo interaction survives a refresh.</p>
+                <div class="mt-3 flex flex-wrap gap-1.5"><span class="chip !text-[0.48rem]">HTML5</span><span class="chip !text-[0.48rem]">Tailwind</span><span class="chip !text-[0.48rem]">Leaflet</span><span class="chip !text-[0.48rem]">Vanilla JS</span><span class="chip !text-[0.48rem]">localStorage</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <div class="mobile-nav-inner">
+        <button type="button" class="mobile-nav-btn active" data-page="dashboard"><svg class="icon"><use href="#i-map"></use></svg><span>Corridor</span></button>
+        <button type="button" class="mobile-nav-btn" data-page="hospital"><svg class="icon"><use href="#i-stethoscope"></use></svg><span>Trauma</span></button>
+        <button type="button" class="mobile-nav-btn" data-page="overview"><svg class="icon"><use href="#i-grid"></use></svg><span>Overview</span></button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ————————————————— INCIDENT MODAL ————————————————— -->
+  <div id="incidentModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="incidentModalTitle">
+    <div class="modal-backdrop" data-close="incidentModal"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Dispatch · new corridor</p>
+          <h2 class="mt-1 text-lg font-bold tracking-tight" id="incidentModalTitle">Create emergency incident</h2>
+          <p class="mt-1 text-[0.64rem] text-slate-500">The new case is saved to localStorage and immediately starts the live corridor simulation.</p>
+        </div>
+        <button type="button" class="icon-btn" data-close="incidentModal" aria-label="Close incident form"><svg class="icon"><use href="#i-x"></use></svg></button>
+      </div>
+      <form id="incidentForm">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="incidentTypeInput">Emergency type</label>
+              <select class="input" id="incidentTypeInput" required>
+                <option value="cardiac">Cardiac emergency</option>
+                <option value="trauma">Road trauma</option>
+                <option value="stroke">Stroke / neuro</option>
+                <option value="respiratory">Respiratory distress</option>
+                <option value="maternity">Maternity</option>
+                <option value="pediatric">Pediatric emergency</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="severityInput">Triage severity</label>
+              <select class="input" id="severityInput" required>
+                <option value="Critical">Critical · red</option>
+                <option value="Urgent">Urgent · amber</option>
+                <option value="Stable">Stable · green</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="pickupInput">Pickup location</label>
+              <input class="input" id="pickupInput" type="text" value="GNDEC Main Gate, Gill Road" required autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label for="destinationInput">Destination hospital</label>
+              <select class="input" id="destinationInput" required>
+                <option value="DMC &amp; Hospital, Tagore Nagar">DMC &amp; Hospital, Tagore Nagar</option>
+                <option value="CMC &amp; Hospital, Brown Road">CMC &amp; Hospital, Brown Road</option>
+                <option value="SPS Hospital, Sherpur">SPS Hospital, Sherpur</option>
+                <option value="Fortis Hospital, Ludhiana">Fortis Hospital, Ludhiana</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="ambulanceInput">Ambulance unit</label>
+              <input class="input" id="ambulanceInput" type="text" value="AMB-17 · ALS" required autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label for="etaInput">Estimated transit (minutes)</label>
+              <input class="input" id="etaInput" type="number" min="3" max="20" step="1" value="7" required />
+            </div>
+            <div class="form-field full">
+              <label for="conditionInput">Patient / clinical note</label>
+              <input class="input" id="conditionInput" type="text" value="Cardiac · male 54 · chest pain, diaphoresis" required autocomplete="off" />
+              <p class="input-hint">This demo uses de-identified patient labels. Vitals remain masked until consent is granted.</p>
+            </div>
+          </div>
+          <div class="mt-4 rounded-lg border border-teal-400/15 bg-teal-400/[0.04] p-3">
+            <div class="flex items-start gap-2.5">
+              <svg class="icon icon-sm mt-0.5 text-teal-300"><use href="#i-route"></use></svg>
+              <div>
+                <p class="text-[0.64rem] font-semibold text-teal-100/90">Corridor plan · GNDEC → destination</p>
+                <p class="mt-1 text-[0.58rem] leading-relaxed text-teal-100/50">On save, five junctions re-arm, the ambulance starts at the pickup point, and the hospital ETA countdown begins. Manual signal overrides are preserved only where an admin has locked them.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-close="incidentModal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-siren"></use></svg> Launch corridor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ————————————————— CONFIRM MODAL ————————————————— -->
+  <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="confirmTitle">
+    <div class="modal-backdrop" data-close="confirmModal"></div>
+    <div class="modal-card is-sm">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Please confirm</p>
+          <h2 class="mt-1 text-base font-bold" id="confirmTitle">Are you sure?</h2>
+        </div>
+        <button type="button" class="icon-btn" data-close="confirmModal" aria-label="Close confirmation"><svg class="icon"><use href="#i-x"></use></svg></button>
+      </div>
+      <div class="modal-body"><p class="text-[0.72rem] leading-relaxed text-slate-400" id="confirmText">This action will update the demo state.</p></div>
+      <div class="modal-foot">
+        <button type="button" class="btn" id="confirmCancelBtn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmOkBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ————————————————— AUDIT DRAWER ————————————————— -->
+  <div id="auditDrawer" class="drawer hidden" aria-hidden="true">
+    <div class="drawer-backdrop" data-close="auditDrawer"></div>
+    <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="auditDrawerTitle">
+      <div class="drawer-head">
+        <div>
+          <p class="eyebrow">Local accountability</p>
+          <h2 class="mt-1 text-base font-bold" id="auditDrawerTitle">Audit trail</h2>
+          <p class="mt-0.5 text-[0.58rem] text-slate-500"><span id="auditCount">0</span> actions · stored in this browser</p>
+        </div>
+        <button type="button" class="icon-btn" data-close="auditDrawer" aria-label="Close audit trail"><svg class="icon"><use href="#i-x"></use></svg></button>
+      </div>
+      <div class="audit-list" id="auditList"></div>
+      <div class="flex items-center gap-2 border-t border-white/[0.07] p-3">
+        <button type="button" class="btn btn-sm flex-1" id="auditExportBtn"><svg class="icon"><use href="#i-download"></use></svg> Export JSON</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-close="auditDrawer">Close</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
